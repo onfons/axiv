@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server';
 import { YoutubeTranscript } from 'youtube-transcript';
 
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
-const GOOGLE_MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
-const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_BASE_URL = 'https://integrate.api.nvidia.com/v1';
 const NVIDIA_MODEL = "google/gemma-4-31b-it";
-
-const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 
 async function searchTavily(query: string) {
   try {
@@ -15,7 +10,7 @@ async function searchTavily(query: string) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        api_key: TAVILY_API_KEY,
+        api_key: process.env.TAVILY_API_KEY,
         query: `${query}`,
         search_depth: "advanced",
         max_results: 10,
@@ -37,7 +32,7 @@ async function searchTavily(query: string) {
 async function getGeocode(address: string) {
   try {
     const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&language=ko&key=${GOOGLE_MAPS_KEY}`
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&language=ko&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}`
     );
     const data = await response.json();
     if (data.status === 'OK') {
@@ -56,7 +51,7 @@ async function callNVIDIA(prompt: string) {
     const response = await fetch(`${NVIDIA_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${NVIDIA_API_KEY}`,
+        'Authorization': `Bearer ${process.env.NVIDIA_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -89,7 +84,7 @@ export async function POST(req: Request) {
 
     // 1. YouTube Metadata Fetch
     const metaRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${process.env.YOUTUBE_API_KEY}`
     );
     const metaData = await metaRes.json();
     if (!metaData.items || metaData.items.length === 0) {
