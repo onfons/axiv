@@ -164,7 +164,7 @@ export async function POST(req: Request) {
       // JSON 내의 실제 줄바꿈 등을 안전하게 처리 (문자열 값 내부의 줄바꿈만 골라내는 것은 어려우므로 전체적으로 다듬음)
       // 단, 구조적 줄바꿈(키-값 사이 등)은 유지해야 하므로, 복잡한 replace보다는 AI 프롬프트를 강화하는 것이 좋음
       places = JSON.parse(jsonStr);
-    } catch (e) {
+    } catch (e: any) {
       console.error('NVIDIA Extraction Parse Error:', e, extractionResult);
       // 만약 에러가 발생하면, AI에게 다시 한 번 'Escape newlines'를 강조하여 요청하거나 수동으로 다듬음
       try {
@@ -172,7 +172,7 @@ export async function POST(req: Request) {
           const fallbackStr = extractionResult.match(/\[[\s\S]*\]/)?.[0] || "";
           // 이 방법은 JSON 구조 자체를 깨트릴 수 있으므로 최후의 수단
           places = JSON.parse(fallbackStr.replace(/\n/g, ' ')); 
-      } catch (e2) {
+      } catch (e2: any) {
           return NextResponse.json({ error: `AI 분석 결과 파싱 실패: ${e.message}` }, { status: 500 });
       }
     }

@@ -17,6 +17,7 @@ type Place = {
   address?: string;
   phone?: string;
   representative_menu?: string;
+  business_hours?: string;
 };
 
 

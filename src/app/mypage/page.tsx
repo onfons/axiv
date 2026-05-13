@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useAppStore } from '@/lib/store';
 import Image from 'next/image';
 import { 
   Heart, 
