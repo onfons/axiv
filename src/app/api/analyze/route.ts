@@ -108,7 +108,13 @@ export async function POST(req: Request) {
         const transcript = await YoutubeTranscript.fetchTranscript(videoId);
         transcriptText = transcript.map(t => t.text).join(' ');
       } catch (e2) {
-        console.warn('Transcript fetch failed:', e2);
+        console.warn('Transcript fetch failed. Falling back to Tavily search for context...');
+        try {
+          const fallbackSearch = await searchTavily(`유튜브 ${snippet.channelTitle} ${title} 장소 식당 위치`);
+          transcriptText = `[자막 추출 실패로 인한 웹 검색 대체 정보]\n${fallbackSearch}`;
+        } catch (searchError) {
+          console.error('Fallback search also failed:', searchError);
+        }
       }
     }
 
@@ -128,6 +134,7 @@ export async function POST(req: Request) {
       3. 실제로 방문하여 리뷰한 장소만 포함하세요.
       4. 응답은 오직 JSON 배열만 반환하세요.
       5. 중요: JSON 문자열 내부에 실제 줄바꿈(raw newline)을 절대 넣지 마세요. 모든 줄바꿈은 반드시 \\n으로 이스케이프해야 합니다.
+      6. 영상에서 장소를 하나도 찾을 수 없다면, 절대 부가 설명을 덧붙이지 말고 오직 빈 배열 [] 만 반환하세요.
       
       응답은 오직 아래 형식의 JSON 배열만 반환하세요 (Do NOT use markdown or comments):
       [
@@ -168,6 +175,9 @@ export async function POST(req: Request) {
     }
 
     // 4. Tavily Search & Greedy Refinement
+    if (places.length === 0) {
+      return NextResponse.json({ error: '자막이 없거나, 영상 내용에서 장소를 찾을 수 없습니다.' }, { status: 404 });
+    }
     const enrichedPlaces = await Promise.all(
       places.map(async (place: any) => {
         try {
