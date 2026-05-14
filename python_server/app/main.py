@@ -1,16 +1,118 @@
 import asyncio
 import aiohttp
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from .utils import extract_video_id, get_youtube_full_data, perform_free_search, call_ai_model, get_coordinates, perform_deep_search, perform_place_detail_search
 import os
 import json
 import re
+import hmac
+import hashlib
+import time
 from dotenv import load_dotenv
+from urllib.parse import urlencode, quote
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
 app = FastAPI(title="YouTube Analysis Python Server")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+COUPANG_ACCESS_KEY = os.getenv('COUPANG_ACCESS_KEY', '').strip()
+COUPANG_SECRET_KEY = os.getenv('COUPANG_SECRET_KEY', '').strip()
+
+def make_coupang_auth(method: str, path: str, query: str = "") -> str:
+    now = time.gmtime()
+    datetime = f"{time.strftime('%y%m%d', now)}T{time.strftime('%H%M%S', now)}Z"
+    message = datetime + method + path + (f"?{query}" if query else "")
+    signature = hmac.new(COUPANG_SECRET_KEY.encode(), message.encode(), hashlib.sha256).hexdigest()
+    return f"CEA algorithm=HmacSHA256, access-key={COUPANG_ACCESS_KEY}, signed-date={datetime}, signature={signature}"
+
+@app.get("/api/coupang")
+async def coupang_proxy(goldbox: bool = False, keyword: str = ""):
+    if not COUPANG_ACCESS_KEY or not COUPANG_SECRET_KEY:
+        return JSONResponse({"products": []})
+
+    # goldbox=true → 골드박스
+    if goldbox:
+        api_path = "/v2/providers/affiliate_open_api/apis/openapi/v1/products/goldbox"
+        query = "limit=5"
+        auth = make_coupang_auth("GET", api_path, query)
+        url = f"https://api-gateway.coupang.com{api_path}?{query}"
+    elif keyword:
+        api_path = "/v2/providers/affiliate_open_api/apis/openapi/products/search"
+        query = f"keyword={quote(keyword)}&limit=5"
+        auth = make_coupang_auth("GET", api_path, query)
+        url = f"https://api-gateway.coupang.com{api_path}?{query}"
+    else:
+        # 추천
+        api_path = "/v2/providers/affiliate_open_api/apis/openapi/v2/products/reco"
+        auth = make_coupang_auth("POST", api_path)
+        url = f"https://api-gateway.coupang.com{api_path}"
+        body = json.dumps({
+            "site": {"id": "1", "domain": "blog.naver.com"},
+            "device": {"id": "32chars_random_device_id_12345", "lmt": 0},
+            "imp": {"imageSize": "300x300"},
+            "user": {"puid": "fonsinfo"}
+        })
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            headers = {
+                "Authorization": auth,
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            }
+            if keyword or goldbox:
+                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as res:
+                    if res.ok:
+                        data = await res.json()
+                        raw = data.get("data", [])
+                        if not isinstance(raw, list):
+                            raw = raw.get("productData", []) if isinstance(raw, dict) else []
+                        products = raw[:5]
+                        return JSONResponse({"products": products})
+            else:
+                async with session.post(url, headers=headers, data=body, timeout=aiohttp.ClientTimeout(total=10)) as res:
+                    if res.ok:
+                        data = await res.json()
+                        raw = data.get("data", [])
+                        if not isinstance(raw, list):
+                            if isinstance(raw, dict):
+                                raw = raw.get("productData", []) if raw.get("productData") else raw.get("products", [])
+                            if not isinstance(raw, list):
+                                raw = []
+                        products = raw[:5]
+                        return JSONResponse({"products": products})
+    except Exception as e:
+        print(f"[Coupang Proxy] Error: {e}")
+
+    # fallback: goldbox
+    if not goldbox:
+        try:
+            api_path = "/v2/providers/affiliate_open_api/apis/openapi/v1/products/goldbox"
+            query = "limit=5"
+            auth = make_coupang_auth("GET", api_path, query)
+            url = f"https://api-gateway.coupang.com{api_path}?{query}"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers={"Authorization": auth, "Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=10)) as res:
+                    if res.ok:
+                        data = await res.json()
+                        raw = data.get("data", [])
+                        products = raw[:5] if isinstance(raw, list) else []
+                        return JSONResponse({"products": products})
+        except:
+            pass
+
+    return JSONResponse({"products": []})
 
 class AnalyzeRequest(BaseModel):
     url: str

@@ -44,6 +44,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ data: result });
     }
 
+    if (action === 'delete_content') {
+      const { id } = data;
+      // CASCADE: content_places → content
+      const { error: linkError } = await serviceClient
+        .from('content_places')
+        .delete()
+        .eq('content_id', id);
+      if (linkError) throw linkError;
+      const { error: contentError } = await serviceClient
+        .from('contents')
+        .delete()
+        .eq('id', id);
+      if (contentError) throw contentError;
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'update_place_coords') {
+      const { id, lat, lng } = data;
+      const { data: result, error } = await serviceClient
+        .from('places')
+        .update({ lat, lng })
+        .eq('id', id);
+      if (error) throw error;
+      return NextResponse.json({ success: true });
+    }
+
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (error: any) {
     console.error('[Service API] Error:', error);

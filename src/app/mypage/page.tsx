@@ -58,12 +58,18 @@ export default function MyPage() {
 
   const handleDelete = async (id: string) => {
     showConfirm('영상 삭제', '정말 이 영상을 삭제하시겠습니까? 관련 데이터가 모두 삭제됩니다.', async () => {
-      const { error } = await supabase.from('contents').delete().eq('id', id);
-      if (error) {
-        showToast('삭제에 실패했습니다.', 'error');
-      } else {
+      try {
+        const res = await fetch('/api/service-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete_content', data: { id } })
+        });
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
         setContents(contents.filter(c => c.id !== id));
         showToast('정상적으로 삭제되었습니다.', 'success');
+      } catch (err: any) {
+        showToast(`삭제에 실패했습니다: ${err.message}`, 'error');
       }
     });
   };

@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useAppStore } from '@/lib/store';
-
 import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
@@ -42,11 +41,25 @@ export default function RegisterPage() {
   const [successItems, setSuccessItems] = useState<string[]>([]);
   const [coupangProducts, setCoupangProducts] = useState<any[]>([]);
 
+  const fetchCoupangByPlace = (places: any[]) => {
+    if (!places?.length) return;
+    const firstPlace = places[0];
+    let keyword = firstPlace.place_name || '';
+    if (!keyword || keyword.includes('미상') || keyword.length < 2) {
+      keyword = firstPlace.category || '맛집추천';
+    }
+    fetch(`https://youtube.onfons.uk/api/coupang?keyword=${encodeURIComponent(keyword)}`)
+      .then(r => r.json())
+      .then(d => { if (d.products?.length) setCoupangProducts(d.products); })
+      .catch(() => {});
+  };
+
   const { showToast } = useAppStore();
 
   // 초기 로딩 시 골드박스 상품 조회
   React.useEffect(() => {
-    fetch('/api/coupang?goldbox=true')
+    const apiUrl = 'https://youtube.onfons.uk/api/coupang?goldbox=true';
+    fetch(apiUrl)
       .then(r => r.json())
       .then(data => { if (data.products?.length) setCoupangProducts(data.products); })
       .catch(() => {});
@@ -56,13 +69,16 @@ export default function RegisterPage() {
     if (!url) return;
     setLoading(true);
     setResult(null);
-    setCoupangProducts([]);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50초 타임아웃
     try {
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       
       const responseText = await response.text();
       let data;
@@ -70,27 +86,24 @@ export default function RegisterPage() {
         data = JSON.parse(responseText);
       } catch (e) {
         console.error('Raw response:', responseText);
+        // HTML 응답 (서버 에러 페이지) 처리
+        if (responseText.startsWith('<!DOCTYPE') || responseText.startsWith('<html')) {
+          throw new Error(`서버에서 HTML 응답 반환 (${response.status}). FastAPI 서버가 중단되었을 수 있습니다.`);
+        }
         throw new Error(`서버 응답 파싱 실패 (상태 코드: ${response.status}): ${responseText.substring(0, 100)}`);
       }
       
       if (!response.ok || data.error) throw new Error(data.error || '알 수 없는 서버 에러');
       setResult(data);
-      // 분석 결과에 따라 쿠팡 상품 검색 (장소 정보 활용)
-      if (data.places?.length) {
-        const firstPlace = data.places[0];
-        let keyword = firstPlace.place_name || '';
-        if (!keyword || keyword.includes('미상') || keyword.length < 2) {
-          keyword = firstPlace.category || '맛집추천';
-        }
-        fetch(`/api/coupang?keyword=${encodeURIComponent(keyword)}`)
-          .then(r => r.json())
-          .then(d => { if (d.products?.length) setCoupangProducts(d.products); })
-          .catch(() => {});
-      }
+      fetchCoupangByPlace(data.places);
       showToast('분석이 완료되었습니다.', 'success');
     } catch (error: any) {
       console.error('Analysis failed:', error);
-      showToast(`분석 실패: ${error.message}`, 'error');
+      if (error.name === 'AbortError') {
+        showToast('분석 시간이 초과되었습니다. (50초) 영상이 너무 긴 경우 다시 시도해주세요.', 'error');
+      } else {
+        showToast(`분석 실패: ${error.message}`, 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -104,7 +117,6 @@ export default function RegisterPage() {
   };
 
   const handleSave = async (place: any, index: number) => {
-
     if (successItems.includes(place.place_name)) return;
     
     setLoading(true);
@@ -129,19 +141,36 @@ export default function RegisterPage() {
       if (contentJson.error) throw new Error(contentJson.error);
       const contentData = contentJson.data;
 
-      // 2. Place Dedup & Save
+      // 2. Place Dedup & Save (위도/경도 포함!)
       let placeId: string;
       const { data: existingPlace } = await supabase
         .from('places')
-        .select('id')
+        .select('id, lat, lng')
         .eq('place_name', place.place_name)
         .eq('address', place.address || place.address_hint)
         .maybeSingle();
 
       if (existingPlace) {
         placeId = existingPlace.id;
+        // 기존 장소의 위도/경도가 없으면 업데이트
+        if (!existingPlace.lat && place.lat) {
+          await fetch('/api/service-save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'upsert_content_place',
+              data: {
+                content_id: contentData.id,
+                place_id: placeId,
+                timeline_seconds: place.timeline_seconds,
+                creator_review: place.creator_review,
+                summary: `${place.place_description || '정보 없음'}\n\n${place.summary || ''}`
+              }
+            })
+          });
+        }
       } else {
-        // Place Insert (via service API)
+        // Place Insert (via service API) - lat/lng 포함!!
         const placeRes = await fetch('/api/service-save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -151,11 +180,10 @@ export default function RegisterPage() {
               place_name: place.place_name,
               address: place.address || place.address_hint,
               category: place.category,
-              lat: place.lat,
-              lng: place.lng,
+              lat: place.lat || 0,
+              lng: place.lng || 0,
               phone: place.phone,
               business_hours: place.business_hours || null,
-              break_time: place.break_time || null,
               representative_menu: place.menu_with_prices || null,
               place_description: place.place_description || null,
               waiting_tip: place.waiting_tip || null,
@@ -168,23 +196,7 @@ export default function RegisterPage() {
         placeId = placeJson.data.id;
       }
 
-
-      // 3. Link Upsert (풍부한 상세 정보 포함하여 저장)
-      const richSummary = `
-[영업시간]
-${place.business_hours || '정보 없음'}
-
-[메뉴 및 가격]
-${place.menu_with_prices || '정보 없음'}
-
-[가게 상세 설명]
-${place.place_description || '정보 없음'}
-
-[AI 요약]
-${place.summary || ''}
-      `.trim();
-
-      // 3. Link Upsert (via service API - bypass RLS)
+      // 3. Link 저장 (가게 상세 설명 + AI 요약만)
       const linkRes = await fetch('/api/service-save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -195,7 +207,7 @@ ${place.summary || ''}
             place_id: placeId,
             timeline_seconds: place.timeline_seconds,
             creator_review: place.creator_review,
-            summary: richSummary
+            summary: `${place.place_description || '정보 없음'}\n\n${place.summary || ''}`
           }
         })
       });
@@ -208,7 +220,6 @@ ${place.summary || ''}
       console.error('Save error detailed:', error);
       showToast(`저장 실패: ${error.message || JSON.stringify(error)}`, 'error');
     } finally {
-
       setLoading(false);
     }
   };
@@ -226,7 +237,6 @@ ${place.summary || ''}
     <div className="h-screen bg-slate-50 dark:bg-slate-950 pt-20 overflow-y-auto custom-scrollbar">
       <div className="max-w-4xl mx-auto px-4 pb-40">
 
-        
         {/* Header Section */}
         <div className="mb-8 pt-4">
           <div className="flex items-center gap-2 text-emerald-500 mb-2">
@@ -289,7 +299,6 @@ ${place.summary || ''}
                     <span className="text-xs font-black text-slate-600 dark:text-slate-300">Creator: {result.metadata.creator_name}</span>
                   </div>
                 </div>
-
               </div>
 
               <div className="space-y-4">
@@ -317,7 +326,7 @@ ${place.summary || ''}
                         </div>
                       </div>
 
-                      {/* Final Verified Info Grid (Editable) */}
+                      {/* Final Verified Info Grid (Editable) - 간소화 */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 border-y border-slate-50 dark:border-slate-800">
                         <div className="flex flex-col gap-1.5">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -345,70 +354,43 @@ ${place.summary || ''}
                         </div>
                       </div>
 
-                      {/* Rich Shop Info (Editable) */}
+                      {/* 가게 상세 설명 + AI 요약만 표시 */}
                       <div className="space-y-4">
-                        {/* Menu & Prices Section */}
-                        <div className="bg-emerald-50/30 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100/50 dark:border-emerald-800/30">
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50">
                           <div className="flex items-center gap-2 mb-3">
-                            <ShoppingBag className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Menu & Prices</span>
+                            <Info className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">상세 설명</span>
                           </div>
                           <textarea 
-                            value={place.menu_with_prices || ''}
-                            onChange={(e) => handlePlaceChange(index, 'menu_with_prices', e.target.value)}
-                            className="w-full bg-white/50 dark:bg-slate-900/50 border-none rounded-xl px-4 py-3 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500 transition-all outline-none min-h-[100px] resize-none leading-relaxed"
-                            placeholder="메뉴 및 가격 정보를 입력하세요"
+                            value={place.place_description || ''}
+                            onChange={(e) => handlePlaceChange(index, 'place_description', e.target.value)}
+                            className="w-full bg-white/50 dark:bg-slate-900/50 border-none rounded-xl px-4 py-3 text-xs font-medium text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-emerald-500 transition-all outline-none min-h-[80px] resize-none leading-relaxed"
+                            placeholder="장소 설명을 입력하세요"
                           />
                         </div>
 
-                        {/* Business Hours & Details Section */}
-                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+                        <div className="bg-emerald-50/30 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100/50 dark:border-emerald-800/30">
                           <div className="flex items-center gap-2 mb-3">
-                            <Clock className="w-3.5 h-3.5 text-slate-400" />
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Business Hours & Details</span>
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">AI 요약</span>
                           </div>
-                          <div className="space-y-3">
-                            <input
-                              value={place.business_hours || ''}
-                              onChange={(e) => handlePlaceChange(index, 'business_hours', e.target.value)}
-                              className="w-full bg-white/50 dark:bg-slate-900/50 border-none rounded-xl px-4 py-2.5 text-[11px] font-bold text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-emerald-500 transition-all outline-none"
-                              placeholder="영업시간 정보를 입력하세요"
-                            />
-                            <input
-                              value={place.break_time || ''}
-                              onChange={(e) => handlePlaceChange(index, 'break_time', e.target.value)}
-                              className="w-full bg-white/50 dark:bg-slate-900/50 border-none rounded-xl px-4 py-2.5 text-[11px] font-bold text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-emerald-500 transition-all outline-none"
-                              placeholder="브레이크타임 정보를 입력하세요 (예: 15:00-17:00)"
-                            />
-                            <textarea 
-                              value={place.place_description || ''}
-                              onChange={(e) => handlePlaceChange(index, 'place_description', e.target.value)}
-                              className="w-full bg-white/50 dark:bg-slate-900/50 border-none rounded-xl px-4 py-3 text-[11px] font-medium text-slate-500 dark:text-slate-400 focus:ring-2 focus:ring-emerald-500 transition-all outline-none min-h-[80px] resize-none leading-relaxed"
-                              placeholder="추가 장소 설명을 입력하세요"
-                            />
-                          </div>
+                          <textarea 
+                            value={place.summary || ''}
+                            onChange={(e) => handlePlaceChange(index, 'summary', e.target.value)}
+                            className="w-full bg-white/50 dark:bg-slate-900/50 border-none rounded-xl px-4 py-3 text-xs font-medium text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-emerald-500 transition-all outline-none min-h-[100px] resize-none leading-relaxed"
+                            placeholder="AI가 분석한 요약 정보"
+                          />
                         </div>
                       </div>
-
-
-                      <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-2xl border-l-4 border-emerald-500">
-                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Creator Insight</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-300 italic leading-relaxed font-bold">"{place.creator_review}"</p>
-                      </div>
-
-
 
                       <button
                         onClick={() => handleSave(place, index)}
                         disabled={successItems.includes(place.place_name) || place.place_name.includes('미상') || !place.place_name}
-
-                        className={`
-                          w-full py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2
-                          ${successItems.includes(place.place_name)
+                        className={`w-full py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 ${
+                          successItems.includes(place.place_name)
                             ? 'bg-emerald-100 text-emerald-600'
                             : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl shadow-slate-900/10'
-                          }
-                        `}
+                        }`}
                       >
                         {successItems.includes(place.place_name) ? (
                           <><CheckCircle2 className="w-4 h-4" /><span>등록 완료</span></>
@@ -417,8 +399,6 @@ ${place.summary || ''}
                         ) : (
                           <><Plus className="w-4 h-4" /><span>등록</span></>
                         )}
-
-
                       </button>
                     </div>
                   </motion.div>
@@ -470,7 +450,6 @@ ${place.summary || ''}
             </div>
           )}
         </AnimatePresence>
-
       </div>
 
       {/* Analysis Loading Overlay */}
@@ -543,7 +522,7 @@ ${place.summary || ''}
                           <div className="p-3 space-y-2">
                             <p className="text-[11px] font-bold text-slate-200 line-clamp-1">{product.productName}</p>
                             <div className="flex items-center justify-between">
-                              <span className="text-emerald-400 font-black text-sm">{product.productPrice.toLocaleString()}원</span>
+                              <span className="text-emerald-400 font-black text-sm">{product.productPrice?.toLocaleString()}원</span>
                               <a 
                                 href={product.productUrl} 
                                 target="_blank" 
@@ -572,7 +551,7 @@ ${place.summary || ''}
                 transition={{ duration: 2, repeat: Infinity }}
                 className="text-center text-[10px] text-slate-500 font-medium"
               >
-                영상이 길 경우 최대 1분 정도 소요될 수 있습니다.
+                영상이 길 경우 최대 50초 정도 소요될 수 있습니다.
               </motion.p>
             </div>
           </motion.div>
