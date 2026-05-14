@@ -1,16 +1,9 @@
-// /src/app/api/coupang/route.ts
-// 쿠팡 파트너스 API - HMAC-SHA256 서명 (공식 스펙 준수)
-// 장소 정보 기반 상품 검색 로직 적용 (axiv)
-
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 const ACCESS_KEY = (process.env.COUPANG_ACCESS_KEY || '').trim();
 const SECRET_KEY = (process.env.COUPANG_SECRET_KEY || '').trim();
 
-/**
- * 쿠팡 파트너스 공식 HMAC-SHA256 서명 생성
- */
 function makeAuthorization(method: string, path: string, query: string): { auth: string; datetime: string } {
   const now = new Date();
   const year = String(now.getUTCFullYear()).slice(2);
@@ -32,6 +25,41 @@ function makeAuthorization(method: string, path: string, query: string): { auth:
   return { auth, datetime };
 }
 
+async function fetchGoldbox() {
+  try {
+    const apiPath = '/v2/providers/affiliate_open_api/apis/openapi/v1/products/goldbox';
+    const query = 'limit=5';
+    const { auth } = makeAuthorization('GET', apiPath, query);
+    const url = `https://api-gateway.coupang.com${apiPath}?${query}`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 
+        'Authorization': auth,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const raw = data.data || [];
+      const products = raw.slice(0, 5).map((p: any) => ({
+        productId:    p.productId,
+        productName:  p.productName,
+        productPrice: p.productPrice,
+        productImage: p.productImage,
+        productUrl:   p.productUrl,
+        isRocket:     p.isRocket,
+      }));
+      console.log('[Coupang] 골드박스');
+      return NextResponse.json({ products });
+    }
+  } catch (e: any) {
+    console.error('[Coupang] 골드박스 에러:', e.message);
+  }
+  return NextResponse.json({ products: [] });
+}
+
 export async function GET(req: Request) {
   if (!ACCESS_KEY || !SECRET_KEY) {
     console.error('[Coupang] 환경변수 누락');
@@ -40,8 +68,14 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const keyword = searchParams.get('keyword') || '';
+  const goldbox = searchParams.get('goldbox') === 'true';
 
-  // ── 1. 키워드가 있으면 검색 API 우선 (공식 경로) ──
+  // 0. goldbox=true 요청 -> 골드박스
+  if (goldbox) {
+    return fetchGoldbox();
+  }
+
+  // 1. 키워드 검색
   if (keyword) {
     try {
       const apiPath = '/v2/providers/affiliate_open_api/apis/openapi/products/search';
@@ -49,8 +83,7 @@ export async function GET(req: Request) {
       const method = 'GET';
       const { auth } = makeAuthorization(method, apiPath, query);
       const url = `https://api-gateway.coupang.com${apiPath}?${query}`;
-
-      console.log(`[Coupang] 키워드 검색: "${keyword}"`);
+      console.log(`[Coupang] 키워드 검색: ${keyword}`);
 
       const res = await fetch(url, {
         method,
@@ -86,7 +119,7 @@ export async function GET(req: Request) {
     }
   }
 
-  // ── 2. 추천 상품(reco) 조회 ──
+  // 2. 추천 상품(reco)
   try {
     const apiPath = '/v2/providers/affiliate_open_api/apis/openapi/v2/products/reco';
     const method = 'POST';
@@ -94,10 +127,10 @@ export async function GET(req: Request) {
     const url = `https://api-gateway.coupang.com${apiPath}`;
 
     const requestBody = {
-      "site": { "id": "1", "domain": "blog.naver.com" },
-      "device": { "id": "32chars_random_device_id_12345", "lmt": 0 },
-      "imp": { "imageSize": "300x300" },
-      "user": { "puid": "fonsinfo" },
+      site: { id: '1', domain: 'blog.naver.com' },
+      device: { id: '32chars_random_device_id_12345', lmt: 0 },
+      imp: { imageSize: '300x300' },
+      user: { puid: 'fonsinfo' },
     };
 
     console.log('[Coupang] 추천 상품 요청');
@@ -136,38 +169,6 @@ export async function GET(req: Request) {
     console.error('[Coupang] 추천 에러:', e.message);
   }
 
-  // ── 3. 골드박스 fallback ──
-  try {
-    const apiPath = '/v2/providers/affiliate_open_api/apis/openapi/v1/products/goldbox';
-    const query = 'limit=5';
-    const { auth } = makeAuthorization('GET', apiPath, query);
-    const url = `https://api-gateway.coupang.com${apiPath}?${query}`;
-
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: { 
-        'Authorization': auth,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      const raw = data.data || [];
-      const products = raw.slice(0, 5).map((p: any) => ({
-        productId:    p.productId,
-        productName:  p.productName,
-        productPrice: p.productPrice,
-        productImage: p.productImage,
-        productUrl:   p.productUrl,
-        isRocket:     p.isRocket,
-      }));
-      console.log('[Coupang] 골드박스 fallback');
-      return NextResponse.json({ products });
-    }
-  } catch (e: any) {
-    console.error('[Coupang] 골드박스 에러:', e.message);
-  }
-
-  return NextResponse.json({ products: [] });
+  // 3. 골드박스 fallback
+  return fetchGoldbox();
 }

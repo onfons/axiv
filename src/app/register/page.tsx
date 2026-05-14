@@ -44,9 +44,9 @@ export default function RegisterPage() {
 
   const { showToast } = useAppStore();
 
-  // 초기 로딩 시 기본 쿠팡 상품 조회
+  // 초기 로딩 시 골드박스 상품 조회
   React.useEffect(() => {
-    fetch('/api/coupang?keyword=맛집추천')
+    fetch('/api/coupang?goldbox=true')
       .then(r => r.json())
       .then(data => { if (data.products?.length) setCoupangProducts(data.products); })
       .catch(() => {});
@@ -109,11 +109,13 @@ export default function RegisterPage() {
     
     setLoading(true);
     try {
-      // 1. Content Upsert (status 컬럼 제외 - 에러 방지)
-      const { data: contentData, error: contentError } = await supabase
-        .from('contents')
-        .upsert([
-          {
+      // 1. Content Upsert (via service API - bypass RLS)
+      const contentRes = await fetch('/api/service-save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'upsert_content',
+          data: {
             video_id: result.video_id,
             title: result.metadata.title,
             url: url,
@@ -121,11 +123,11 @@ export default function RegisterPage() {
             creator_channel_url: `https://www.youtube.com/channel/${result.video_id}`,
             thumbnail_url: result.metadata.thumbnail_url
           }
-        ], { onConflict: 'video_id' })
-        .select()
-        .single();
-
-      if (contentError) throw contentError;
+        })
+      });
+      const contentJson = await contentRes.json();
+      if (contentJson.error) throw new Error(contentJson.error);
+      const contentData = contentJson.data;
 
       // 2. Place Dedup & Save
       let placeId: string;
@@ -139,30 +141,31 @@ export default function RegisterPage() {
       if (existingPlace) {
         placeId = existingPlace.id;
       } else {
-        const { data: newPlace, error: placeError } = await supabase
-          .from('places')
-          .insert([{
-            place_name: place.place_name,
-            address: place.address || place.address_hint,
-            category: place.category,
-            lat: place.lat,
-            lng: place.lng,
-            phone: place.phone,
-            business_hours: place.business_hours || null,
-            break_time: place.break_time || null,
-            representative_menu: place.menu_with_prices || null,
-            place_description: place.place_description || null,
-            waiting_tip: place.waiting_tip || null,
-            parking_info: place.parking_info || null
-          }])
-          .select()
-          .single();
-
-        if (placeError) {
-          console.error('Place insert error:', JSON.stringify(placeError, null, 2));
-          throw new Error(`Place 저장 실패: ${placeError.message || '알 수 없는 오류'}`);
-        }
-        placeId = newPlace.id;
+        // Place Insert (via service API)
+        const placeRes = await fetch('/api/service-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'upsert_place',
+            data: {
+              place_name: place.place_name,
+              address: place.address || place.address_hint,
+              category: place.category,
+              lat: place.lat,
+              lng: place.lng,
+              phone: place.phone,
+              business_hours: place.business_hours || null,
+              break_time: place.break_time || null,
+              representative_menu: place.menu_with_prices || null,
+              place_description: place.place_description || null,
+              waiting_tip: place.waiting_tip || null,
+              parking_info: place.parking_info || null
+            }
+          })
+        });
+        const placeJson = await placeRes.json();
+        if (placeJson.error) throw new Error(placeJson.error);
+        placeId = placeJson.data.id;
       }
 
 
@@ -181,18 +184,23 @@ ${place.place_description || '정보 없음'}
 ${place.summary || ''}
       `.trim();
 
-      const { error: linkError } = await supabase
-        .from('content_places')
-        .upsert([{
-          content_id: contentData.id,
-          place_id: placeId,
-          timeline_seconds: place.timeline_seconds,
-          creator_review: place.creator_review,
-          summary: richSummary
-        }], { onConflict: 'content_id,place_id' });
-
-
-      if (linkError) throw linkError;
+      // 3. Link Upsert (via service API - bypass RLS)
+      const linkRes = await fetch('/api/service-save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'upsert_content_place',
+          data: {
+            content_id: contentData.id,
+            place_id: placeId,
+            timeline_seconds: place.timeline_seconds,
+            creator_review: place.creator_review,
+            summary: richSummary
+          }
+        })
+      });
+      const linkJson = await linkRes.json();
+      if (linkJson.error) throw new Error(linkJson.error);
 
       setSuccessItems([...successItems, place.place_name]);
       showToast(`${place.place_name} 등록 성공!`, 'success');

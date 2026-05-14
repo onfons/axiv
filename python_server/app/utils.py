@@ -91,15 +91,17 @@ def perform_free_search(query):
         return ""
 
 
-def perform_place_detail_search(place_name):
-    """상호명 기반 상세 검색: 주소, 전화번호, 메뉴/가격, 영업시간/브레이크타임"""
+def perform_place_detail_search(place_name, address=""):
+    """상호명+주소 기반 상세 검색: 네이버 지도/플레이스 정보 활용"""
     context = ""
+    location = address if address else place_name
     queries = [
-        f"{place_name} 전화번호 주소",
-        f"{place_name} 메뉴 가격",
-        f"{place_name} 영업시간 브레이크타임 휴무일",
+        f"{place_name} {location} 전화번호",
+        f"{place_name} {location} 영업시간",
+        f"{place_name} {location} 메뉴 가격",
+        f"{place_name} {location} 브레이크타임",
     ]
-    labels = ["전화번호주소", "메뉴정보", "영업시간"]
+    labels = ["전화번호주소", "영업시간", "메뉴정보", "영업시간"]
     try:
         for q, lbl in zip(queries, labels):
             try:
