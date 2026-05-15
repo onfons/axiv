@@ -3,7 +3,7 @@ import aiohttp
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from .utils import extract_video_id, get_youtube_full_data, perform_free_search, call_ai_model, get_coordinates, perform_deep_search, perform_place_detail_search
+from .utils import extract_video_id, get_youtube_full_data, perform_free_search, call_ai_model, get_coordinates, perform_deep_search
 import os
 import json
 import re
@@ -193,23 +193,12 @@ async def analyze_video(request: AnalyzeRequest):
         print(f"1st AI Parse Error: {e}")
         places = []
 
-    # 4. 각 장소별 상세 검색 (상호명 + 주소 기반)
+    # 4. 상세 검색 생략 → 좌표 추출로 바로 이동 (속도 최적화)
+    # 1차 AI 분석에서 perform_deep_search 결과를 이미 활용함
     if places:
-        print(f"1차 분석 완료: {len(places)}개 장소 발견. 상세 검색 시작...")
-        place_detail_context = ""
-        for i, place in enumerate(places):
-            pname = place.get('place_name', '')
-            paddr = place.get('address', '')
-            if pname and '미상' not in pname:
-                detail = perform_place_detail_search(pname, paddr)
-                if detail:
-                    place_detail_context += f"\n=== [{pname}] 상세 검색 결과 ===\n{detail}\n"
-
-        # 5. 1차 결과만 사용 → 2차 분석 생략 (속도 최적화)
-        # 상세 검색 결과 좌표 추출로 바로 이동
         print(f"1차 분석 완료: {len(places)}개 장소 발견. 좌표 추출 진행...")
 
-        # 6. 주소 기반 좌표 추출 (Geocoding)
+        # 5. 주소 기반 좌표 추출 (Geocoding)
         for place in places:
             addr = place.get('address', '')
             lat, lng = get_coordinates(addr)

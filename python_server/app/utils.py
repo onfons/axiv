@@ -162,13 +162,13 @@ def call_ai_model(prompt):
     }
     
     try:
-        response = requests.post(f"{NVIDIA_BASE_URL}/chat/completions", json=payload, headers=headers, timeout=25)
+        response = requests.post(f"{NVIDIA_BASE_URL}/chat/completions", json=payload, headers=headers, timeout=60)
         response.raise_for_status()
         data = response.json()
         return data['choices'][0]['message']['content']
     except requests.exceptions.Timeout:
-        print("AI API Timeout (25s)")
-        return '[{"place_name":"타임아웃","address":"","phone":"","category":"food","business_hours":"","break_time":"","menu_with_prices":"","place_description":"AI 분석 시간 초과로 정보를 가져오지 못했습니다.","waiting_tip":"","parking_info":"","creator_review":"","summary":"","timeline_seconds":0}]'
+        print("AI API Timeout (60s)")
+        return ''
     except Exception as e:
         print(f"AI API Error: {e}")
-        return '[{"place_name":"분석오류","address":"","phone":"","category":"food","business_hours":"","break_time":"","menu_with_prices":"","place_description":"AI 분석 중 오류가 발생했습니다.","waiting_tip":"","parking_info":"","creator_review":"","summary":"","timeline_seconds":0}]'
+        return ''

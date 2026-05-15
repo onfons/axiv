@@ -68,16 +68,12 @@ export default function RegisterPage() {
     if (!url) return;
     setLoading(true);
     setResult(null);
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50초 타임아웃
     try {
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
-        signal: controller.signal,
       });
-      clearTimeout(timeoutId);
       
       const responseText = await response.text();
       let data;
@@ -98,11 +94,7 @@ export default function RegisterPage() {
       showToast('분석이 완료되었습니다.', 'success');
     } catch (error: any) {
       console.error('Analysis failed:', error);
-      if (error.name === 'AbortError') {
-        showToast('분석 시간이 초과되었습니다. (50초) 영상이 너무 긴 경우 다시 시도해주세요.', 'error');
-      } else {
-        showToast(`분석 실패: ${error.message}`, 'error');
-      }
+      showToast(`분석 실패: ${error.message}`, 'error');
     } finally {
       setLoading(false);
     }
