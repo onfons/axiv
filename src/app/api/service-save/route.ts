@@ -70,6 +70,63 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true });
     }
 
+    if (action === 'delete_place') {
+      const { id } = data;
+      // CASCADE: content_places → places
+      const { error: linkError } = await serviceClient
+        .from('content_places')
+        .delete()
+        .eq('place_id', id);
+      if (linkError) throw linkError;
+      const { error: placeError } = await serviceClient
+        .from('places')
+        .delete()
+        .eq('id', id);
+      if (placeError) throw placeError;
+      // 관련 즐겨찾기도 삭제
+      await serviceClient.from('favorites').delete().eq('place_id', id);
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'get_favorites_with_places') {
+      const { userId } = data;
+      const { data: favData, error } = await serviceClient
+        .from('favorites')
+        .select(`id, place:places (*)`)
+        .eq('user_id', userId);
+      if (error) throw error;
+      return NextResponse.json({ data: favData });
+    }
+
+    if (action === 'check_favorite') {
+      const { userId, placeId } = data as { userId: string; placeId: string };
+      const { data: favData, error } = await serviceClient
+        .from('favorites')
+        .select('id')
+        .match({ user_id: userId, place_id: placeId })
+        .maybeSingle();
+      if (error) throw error;
+      return NextResponse.json({ isFavorite: !!favData, id: favData?.id });
+    }
+
+    if (action === 'toggle_favorite') {
+      const d = data as { userId: string; placeId: string; isCurrentlyFavorite: boolean };
+      if (d.isCurrentlyFavorite) {
+        const { error } = await serviceClient
+          .from('favorites')
+          .delete()
+          .match({ user_id: d.userId, place_id: d.placeId });
+        if (error) throw error;
+        return NextResponse.json({ isFavorite: false });
+      } else {
+        const { error } = await serviceClient
+          .from('favorites')
+          .insert({ user_id: d.userId, place_id: d.placeId });
+        if (error) throw error;
+        return NextResponse.json({ isFavorite: true });
+      }
+    }
+
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (error: any) {
     console.error('[Service API] Error:', error);

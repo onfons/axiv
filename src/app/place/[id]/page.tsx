@@ -324,19 +324,23 @@ export default function PlaceDetailPage() {
 
 
   const handleDelete = async () => {
-    if (!confirm('정말 삭제하시겠습니까? 관련 데이터가 모두 삭제됩니다.')) return;
-    
-    const { error } = await supabase
-      .from('places')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      alert('삭제 실패: ' + error.message);
-    } else {
-      alert('삭제되었습니다.');
-      router.push('/');
-    }
+    const { showConfirm } = useAppStore.getState();
+    showConfirm('장소 삭제', '정말 삭제하시겠습니까? 관련 데이터가 모두 삭제됩니다.', async () => {
+      try {
+        // 서비스 API로 삭제 (RLS 우회)
+        const res = await fetch('/api/service-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete_place', data: { id } })
+        });
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+        showToast('삭제되었습니다.', 'success');
+        router.push('/');
+      } catch (error: any) {
+        showToast('삭제 실패: ' + error.message, 'error');
+      }
+    });
   };
 
 

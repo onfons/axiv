@@ -111,15 +111,20 @@ function MapContainerImpl({ places }: MapProps) {
     }
   };
 
-  // selectedPlace 변경 시 즐겨찾기 상태 확인
+// 즐겨찾기 체크 — 서비스 API (RLS 우회)
   useEffect(() => {
     if (!selectedPlace || !currentUser) {
       setIsFavorite(false);
       return;
     }
-    supabase.from('favorites').select('id').match({ user_id: currentUser.id, place_id: selectedPlace.id }).maybeSingle().then(({ data }) => {
-      setIsFavorite(!!data);
-    });
+    fetch('/api/service-save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'check_favorite',
+        data: { userId: currentUser.id, placeId: selectedPlace.id }
+      })
+    }).then(r => r.json()).then(d => setIsFavorite(!!d.isFavorite)).catch(() => setIsFavorite(false));
   }, [selectedPlace, currentUser]);
 
   const toggleFavorite = async () => {
@@ -130,15 +135,18 @@ function MapContainerImpl({ places }: MapProps) {
     if (!selectedPlace) return;
     setFavoriteLoading(true);
     try {
-      if (isFavorite) {
-        await supabase.from('favorites').delete().match({ user_id: currentUser.id, place_id: selectedPlace.id });
-        setIsFavorite(false);
-        showToast('즐겨찾기가 해제되었습니다.', 'success');
-      } else {
-        await supabase.from('favorites').insert({ user_id: currentUser.id, place_id: selectedPlace.id });
-        setIsFavorite(true);
-        showToast('즐겨찾기에 추가되었습니다.', 'success');
-      }
+      const res = await fetch('/api/service-save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'toggle_favorite',
+          data: { userId: currentUser.id, placeId: selectedPlace.id, isCurrentlyFavorite: isFavorite }
+        })
+      });
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      setIsFavorite(json.isFavorite);
+      showToast(json.isFavorite ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기가 해제되었습니다.', 'success');
     } catch {
       showToast('처리 중 오류가 발생했습니다.', 'error');
     } finally {

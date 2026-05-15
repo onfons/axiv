@@ -34,16 +34,24 @@ export default function MyPage() {
           .select('*')
           .order('created_at', { ascending: false });
         
-        // 2. Fetch Favorite Places (Assuming favorites table exists)
-        const { data: favoritesData } = await supabase
-          .from('favorites')
-          .select(`
-            id,
-            place:places (*)
-          `);
+        // 2. Fetch Favorite Places (via service API - RLS 우회)
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const res = await fetch('/api/service-save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              action: 'get_favorites_with_places', 
+              data: { userId: user.id } 
+            })
+          });
+          const json = await res.json();
+          if (!json.error) {
+            setFavorites(json.data || []);
+          }
+        }
         
         setContents(contentsData || []);
-        setFavorites(favoritesData || []);
       } catch (err) {
         console.error('Fetch error:', err);
       } finally {
