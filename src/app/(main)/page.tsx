@@ -13,7 +13,6 @@ export default function MainPage() {
   const [places, setPlaces] = useState<any[]>([]);
   const [mrtDataMap, setMrtDataMap] = useState<Record<string, any>>({});
   const { selectedCategory, searchQuery } = useAppStore();
-  const [mapBounds, setMapBounds] = useState<any>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // MyRealTrip 데이터를 병렬로 가져오는 함수
@@ -104,7 +103,7 @@ export default function MainPage() {
       fetchMrtData(filtered);
     };
     fetchPlaces();
-  }, [selectedCategory, searchQuery, mapBounds, fetchMrtData]);
+  }, [selectedCategory, searchQuery, fetchMrtData]);
 
 
   return (
@@ -122,7 +121,7 @@ export default function MainPage() {
               animate={{ x: 0 }}
               exit={{ x: -420 }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="absolute md:relative bottom-0 left-0 right-0 md:right-auto w-full md:w-[400px] h-[60vh] md:h-full bg-white dark:bg-slate-950 z-[80] shadow-2xl md:shadow-none border-r border-slate-100 dark:border-slate-900 flex flex-col"
+              className="absolute md:relative bottom-0 left-0 right-0 md:right-auto w-full md:w-[400px] h-[55vh] md:h-full bg-white dark:bg-slate-950 z-[80] shadow-2xl md:shadow-none border-r border-slate-100 dark:border-slate-900 flex flex-col"
             >
               <div className="p-8 pb-4 mt-4">
 
@@ -172,10 +171,7 @@ export default function MainPage() {
 
         {/* Immersive Map Container */}
         <div className="flex-1 h-full z-0">
-          <MapContainer 
-            places={places} 
-            onBoundsChange={(bounds) => setMapBounds(bounds)} 
-          />
+          <MapContainer places={places} />
         </div>
 
       </div>

@@ -48,7 +48,6 @@ const mapStyles = [
 
 interface MapProps {
   places: any[];
-  onBoundsChange?: (bounds: any) => void;
 }
 
 function getMarkerIcon(category: string): google.maps.Icon {
@@ -73,7 +72,7 @@ function getMarkerIcon(category: string): google.maps.Icon {
   };
 }
 
-export default function MapContainer({ places, onBoundsChange }: MapProps) {
+export default function MapContainer({ places }: MapProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY as string;
   const mapRef = useRef<google.maps.Map | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<any>(null);
@@ -107,18 +106,8 @@ export default function MapContainer({ places, onBoundsChange }: MapProps) {
   }, []);
 
   const onIdle = useCallback(() => {
-    if (mapRef.current && onBoundsChange) {
-      const bounds = mapRef.current.getBounds();
-      if (bounds) {
-        onBoundsChange({
-          north: bounds.getNorthEast().lat(),
-          south: bounds.getSouthWest().lat(),
-          east: bounds.getNorthEast().lng(),
-          west: bounds.getSouthWest().lng(),
-        });
-      }
-    }
-  }, [onBoundsChange]);
+    // mapBounds를 사용하지 않음 — 모든 장소는 초기에 한 번만 로드
+  }, []);
 
   if (!apiKey) return <div className="h-full bg-slate-50 flex items-center justify-center font-black text-slate-300">API Key Missing</div>;
 
