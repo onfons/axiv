@@ -205,55 +205,9 @@ async def analyze_video(request: AnalyzeRequest):
                 if detail:
                     place_detail_context += f"\n=== [{pname}] 상세 검색 결과 ===\n{detail}\n"
 
-        # 5. 2차 AI 분석: 상세 검색 결과로 정보 보강 (전화번호/영업시간/메뉴 강제 보강)
-        if place_detail_context:
-            print("2차 AI 분석 시작: 상세 정보 보강 중...")
-            second_prompt = f"""
-    1차 분석에서 추출된 장소 목록입니다:
-    {json.dumps(places, ensure_ascii=False, indent=2)}
-
-    각 장소별 상세 검색 결과입니다:
-    {place_detail_context[:12000]}
-
-    위 상세 검색 결과를 반영하여 각 장소의 정보를 보강한 최종 JSON 배열만 응답하세요.
-
-    중요 지침 (반드시 따라야 함):
-    1. [전화번호주소] 섹션에서 전화번호("XXX-XXXX-XXXX" 형식)를 찾아 phone 필드에 정확히 입력하세요. 전화번호가 검색 결과에 없으면 비워두지 말고 "정보 없음"으로 표시하세요.
-    2. [영업시간] 섹션에서 영업시간 정보를 business_hours에 입력하세요. 브레이크타임이 별도로 명시되어 있으면 break_time 필드에 "15:00-17:00" 형식으로 분리해서 기록하세요.
-    3. [메뉴정보] 섹션에서 메뉴명과 가격 정보를 menu_with_prices에 입력하세요.
-    4. 1차 분석 결과보다 상세 검색 결과의 정보가 더 정확하므로, 상세 검색 결과를 우선하여 덮어쓰세요.
-    5. 반드시 1차 분석과 동일한 개수의 장소를 동일한 순서로 유지하세요.
-    6. 모든 필드를 채우려고 노력하세요. 빈 문자열로 남겨두지 마세요.
-
-    응답 JSON 형식:
-    [
-      {{{{
-        "place_name": "상호명",
-        "address": "상세 도로명 주소",
-        "phone": "전화번호 (검색결과에서 찾은 정확한 번호, 없으면 '정보 없음')",
-        "category": "카테고리",
-        "business_hours": "영업시간 정보 (예: 매일 11:00-22:00, 일요일 휴무)",
-        "break_time": "브레이크타임 (예: 15:00-17:00, 없으면 빈 문자열)",
-        "menu_with_prices": "메뉴명과 가격 정보",
-        "place_description": "장소 설명",
-        "waiting_tip": "웨이팅 정보 (없으면 '없음')",
-        "parking_info": "주차 정보 (없으면 '없음')",
-        "creator_review": "크리에이터 리뷰 요약",
-        "summary": "종합 요약",
-        "timeline_seconds": 0
-      }}}}
-    ]
-    """
-            second_analysis = call_ai_model(second_prompt)
-            try:
-                json_match2 = re.search(r'\[\s*\{.*\}\s*\]', second_analysis, re.DOTALL)
-                if json_match2:
-                    places = json.loads(json_match2.group(0))
-                else:
-                    places = json.loads(second_analysis)
-                print(f"2차 분석 완료: {len(places)}개 장소 정보 보강됨")
-            except Exception as e:
-                print(f"2nd AI Parse Error (1차 결과 유지): {e}")
+        # 5. 1차 결과만 사용 → 2차 분석 생략 (속도 최적화)
+        # 상세 검색 결과 좌표 추출로 바로 이동
+        print(f"1차 분석 완료: {len(places)}개 장소 발견. 좌표 추출 진행...")
 
         # 6. 주소 기반 좌표 추출 (Geocoding)
         for place in places:

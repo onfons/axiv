@@ -145,8 +145,8 @@ def call_ai_model(prompt):
     """NVIDIA NIM API를 사용하여 AI 분석을 수행합니다."""
     NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
     NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
-    # 분석/추출 작업에는 qwen3-coder-480b 사용 (추출 정확도 향상)
-    NVIDIA_MODEL = "qwen/qwen3-coder-480b-a35b-instruct"
+    # 빠른 분석에 최적화된 모델
+    NVIDIA_MODEL = "google/gemma-4-31b-it"
     if not NVIDIA_API_KEY:
         return "AI API 키가 설정되지 않았습니다."
 
@@ -154,6 +154,7 @@ def call_ai_model(prompt):
         "model": NVIDIA_MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.1,
+        "max_tokens": 4096,
     }
     headers = {
         "Authorization": f"Bearer {NVIDIA_API_KEY}",
@@ -161,10 +162,13 @@ def call_ai_model(prompt):
     }
     
     try:
-        response = requests.post(f"{NVIDIA_BASE_URL}/chat/completions", json=payload, headers=headers)
+        response = requests.post(f"{NVIDIA_BASE_URL}/chat/completions", json=payload, headers=headers, timeout=25)
         response.raise_for_status()
         data = response.json()
         return data['choices'][0]['message']['content']
+    except requests.exceptions.Timeout:
+        print("AI API Timeout (25s)")
+        return '[{"place_name":"타임아웃","address":"","phone":"","category":"food","business_hours":"","break_time":"","menu_with_prices":"","place_description":"AI 분석 시간 초과로 정보를 가져오지 못했습니다.","waiting_tip":"","parking_info":"","creator_review":"","summary":"","timeline_seconds":0}]'
     except Exception as e:
         print(f"AI API Error: {e}")
-        return f"AI 분석 중 오류 발생: {str(e)}"
+        return '[{"place_name":"분석오류","address":"","phone":"","category":"food","business_hours":"","break_time":"","menu_with_prices":"","place_description":"AI 분석 중 오류가 발생했습니다.","waiting_tip":"","parking_info":"","creator_review":"","summary":"","timeline_seconds":0}]'

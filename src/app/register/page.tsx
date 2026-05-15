@@ -48,7 +48,7 @@ export default function RegisterPage() {
     if (!keyword || keyword.includes('미상') || keyword.length < 2) {
       keyword = firstPlace.category || '맛집추천';
     }
-    fetch(`https://youtube.onfons.uk/api/coupang?keyword=${encodeURIComponent(keyword)}`)
+    fetch(`/api/coupang?keyword=${encodeURIComponent(keyword)}`)
       .then(r => r.json())
       .then(d => { if (d.products?.length) setCoupangProducts(d.products); })
       .catch(() => {});
@@ -58,8 +58,7 @@ export default function RegisterPage() {
 
   // 초기 로딩 시 골드박스 상품 조회
   React.useEffect(() => {
-    const apiUrl = 'https://youtube.onfons.uk/api/coupang?goldbox=true';
-    fetch(apiUrl)
+    fetch('/api/coupang?goldbox=true')
       .then(r => r.json())
       .then(data => { if (data.products?.length) setCoupangProducts(data.products); })
       .catch(() => {});
