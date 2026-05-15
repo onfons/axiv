@@ -42,6 +42,7 @@ export default function RegisterPage() {
   const [result, setResult] = useState<any>(null);
   const [successItems, setSuccessItems] = useState<string[]>([]);
   const [coupangProducts, setCoupangProducts] = useState<any[]>([]);
+  const [savingIndex, setSavingIndex] = useState<number | null>(null);
 
   const fetchCoupangByPlace = (places: any[]) => {
     if (!places?.length) return;
@@ -119,6 +120,8 @@ export default function RegisterPage() {
 
   const handleSave = async (place: any, index: number) => {
     if (successItems.includes(place.place_name)) return;
+    if (savingIndex === index) return; // 중복 클릭 방지
+    setSavingIndex(index);
     
     setLoading(true);
     try {
@@ -165,7 +168,7 @@ export default function RegisterPage() {
                 place_id: placeId,
                 timeline_seconds: place.timeline_seconds,
                 creator_review: place.creator_review,
-                summary: `${place.place_description || '정보 없음'}\n\n${place.summary || ''}`
+                summary: place.summary || null
               }
             })
           });
@@ -210,7 +213,7 @@ export default function RegisterPage() {
             timeline_seconds: place.timeline_seconds,
             creator_review: place.creator_review,
             review_url: place.review_url || null,
-            summary: `${place.place_description || '정보 없음'}\n\n${place.summary || ''}`
+            summary: place.summary || null
           }
         })
       });
@@ -224,6 +227,7 @@ export default function RegisterPage() {
       showToast(`저장 실패: ${error.message || JSON.stringify(error)}`, 'error');
     } finally {
       setLoading(false);
+      setSavingIndex(null);
     }
   };
 
@@ -449,15 +453,19 @@ export default function RegisterPage() {
 
                       <button
                         onClick={() => handleSave(place, index)}
-                        disabled={successItems.includes(place.place_name) || place.place_name.includes('미상') || !place.place_name}
+                        disabled={successItems.includes(place.place_name) || place.place_name.includes('미상') || !place.place_name || savingIndex === index}
                         className={`w-full py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 ${
                           successItems.includes(place.place_name)
                             ? 'bg-emerald-100 text-emerald-600'
+                            : savingIndex === index
+                            ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                             : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl shadow-slate-900/10'
                         }`}
                       >
                         {successItems.includes(place.place_name) ? (
                           <><CheckCircle2 className="w-4 h-4" /><span>등록 완료</span></>
+                        ) : savingIndex === index ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" /><span>저장 중...</span></>
                         ) : place.place_name.includes('미상') || !place.place_name ? (
                           <span>상호명 확인 필요</span>
                         ) : (

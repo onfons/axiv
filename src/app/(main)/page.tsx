@@ -183,11 +183,12 @@ export default function MainPage() {
       {/* ================= FOOTER ================= */}
       <footer className="relative z-10 w-full py-5 px-6 border-t border-emerald-500/20 flex flex-col md:flex-row justify-between items-center gap-3 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
         <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
-          <span className="text-[9px] text-slate-400 tracking-widest uppercase">© 2024 AXIV. AI-Powered Place Curation.</span>
+          <span className="text-[9px] text-slate-400 tracking-widest uppercase">© 2026 FONS - AXIV Place Curation.</span>
         </div>
         <div className="flex gap-6">
-          <Link href="/contact" className="text-[11px] text-slate-400 hover:text-emerald-500 transition-colors font-medium">문의하기</Link>
+          <Link href="/terms" className="text-[11px] text-slate-400 hover:text-emerald-500 transition-colors font-medium">이용약관</Link>
           <Link href="/privacy" className="text-[11px] text-slate-400 hover:text-emerald-500 transition-colors font-medium">개인정보처리방침</Link>
+          <Link href="/contact" className="text-[11px] text-slate-400 hover:text-emerald-500 transition-colors font-medium">문의하기</Link>
         </div>
       </footer>
     </div>
