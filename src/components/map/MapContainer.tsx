@@ -8,8 +8,6 @@ import { Play, Phone, Clock, X, Navigation } from 'lucide-react';
 import { getCategoryColor } from '@/lib/categories';
 
 
-
-
 const containerStyle = {
   width: '100%',
   height: '100%',
@@ -53,11 +51,33 @@ interface MapProps {
   onBoundsChange?: (bounds: any) => void;
 }
 
+function getMarkerIcon(category: string): google.maps.Icon {
+  const color = getCategoryColor(category) || '#10B981';
+  const symbols: Record<string, string> = {
+    food: '<circle cx="12" cy="9" r="3.5" fill="white"/><path d="M10 7l4 4M14 7l-4 4" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>',
+    cafe: '<path d="M8 10h8M9.5 8h5M10.5 6h3" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>',
+    camping: '<path d="M8 11l4-4 4 4M9.5 11v3.5h5V11" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+    fishing: '<circle cx="12" cy="8" r="2.5" fill="white"/><path d="M8 12c1.5 0 3-1 4-2" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>',
+    travel: '<path d="M12 7l2 3 3 .5-2.5 2.5.8 3L12 14l-3.3 2 .8-3L7 10.5l3-.5z" fill="white"/>',
+    accommodation: '<rect x="9" y="11" width="6" height="5" rx="0.8" fill="white"/><path d="M9 8h6v3H9zm1-3h4v2h-4z" fill="white"/>',
+  };
+  const inner = symbols[category] || '';
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 28" width="48" height="56">' +
+    '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="' + color + '" stroke="white" stroke-width="2"/>' +
+    inner +
+    '</svg>';
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new google.maps.Size(36, 42),
+    anchor: new google.maps.Point(18, 42),
+  };
+}
+
 export default function MapContainer({ places, onBoundsChange }: MapProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY as string;
   const mapRef = useRef<google.maps.Map | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<any>(null);
-  
+
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const router = useRouter();
 
@@ -151,21 +171,7 @@ export default function MapContainer({ places, onBoundsChange }: MapProps) {
               key={place.id}
               position={{ lat: Number(place.lat), lng: Number(place.lng) }}
               onClick={() => setSelectedPlace(place)}
-              label={{
-                text: place.place_name,
-                color: "#10B981",
-                fontWeight: "900",
-                fontSize: "11px",
-                className: "marker-label bg-white/90 px-2 py-1 rounded-lg border border-emerald-500 shadow-xl backdrop-blur-md translate-y-8"
-              }}
-              icon={{
-                path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
-                fillColor: getCategoryColor(place.category) || '#10B981',
-                fillOpacity: 1,
-                strokeColor: '#ffffff',
-                strokeWeight: 2,
-                scale: 1.6,
-              }}
+              icon={getMarkerIcon(place.category)}
             />
           ))}
 
@@ -280,7 +286,7 @@ export default function MapContainer({ places, onBoundsChange }: MapProps) {
 
       {/* Floating Controls */}
       <div className="absolute bottom-10 right-6 z-20 flex flex-col gap-3">
-        <button 
+        <button
           onClick={handleCenterUser}
           className="w-12 h-12 bg-white rounded-2xl shadow-2xl border border-slate-100 flex items-center justify-center group hover:bg-emerald-500 transition-all active:scale-90"
         >
