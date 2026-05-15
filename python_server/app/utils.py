@@ -146,7 +146,7 @@ def call_ai_model(prompt):
     NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
     NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
     # 빠른 분석에 최적화된 모델
-    NVIDIA_MODEL = "google/gemma-4-31b-it"
+    NVIDIA_MODEL = "google/gemma-3n-e4b-it"
     if not NVIDIA_API_KEY:
         return "AI API 키가 설정되지 않았습니다."
 
@@ -162,12 +162,12 @@ def call_ai_model(prompt):
     }
     
     try:
-        response = requests.post(f"{NVIDIA_BASE_URL}/chat/completions", json=payload, headers=headers, timeout=60)
+        response = requests.post(f"{NVIDIA_BASE_URL}/chat/completions", json=payload, headers=headers, timeout=120)
         response.raise_for_status()
         data = response.json()
         return data['choices'][0]['message']['content']
     except requests.exceptions.Timeout:
-        print("AI API Timeout (60s)")
+        print("AI API Timeout (120s)")
         return ''
     except Exception as e:
         print(f"AI API Error: {e}")

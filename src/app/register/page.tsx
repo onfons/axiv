@@ -68,12 +68,16 @@ export default function RegisterPage() {
     if (!url) return;
     setLoading(true);
     setResult(null);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
     try {
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       
       const responseText = await response.text();
       let data;
@@ -94,7 +98,11 @@ export default function RegisterPage() {
       showToast('분석이 완료되었습니다.', 'success');
     } catch (error: any) {
       console.error('Analysis failed:', error);
-      showToast(`분석 실패: ${error.message}`, 'error');
+      if (error.name === 'AbortError') {
+        showToast('분석 시간이 초과되었습니다. (2분) 영상이 너무 긴 경우 다시 시도해주세요.', 'error');
+      } else {
+        showToast(`분석 실패: ${error.message}`, 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -481,68 +489,13 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Middle: Coupang Partners Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between px-2">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Coupang Recommended</span>
-                  <span className="text-[10px] font-bold text-slate-500">파트너스 활동의 일환으로 수수료를 제공받을 수 있습니다.</span>
-                </div>
-                
-                <div className="relative overflow-hidden rounded-3xl bg-white/5 border border-white/10 p-4">
-                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x">
-                    {coupangProducts.length > 0 ? (
-                      coupangProducts.map((product, idx) => (
-                        <motion.div 
-                          key={idx}
-                          initial={{ x: 50, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          transition={{ delay: idx * 0.1 }}
-                          className="flex-shrink-0 w-[240px] snap-center bg-white/10 rounded-2xl overflow-hidden border border-white/5 group"
-                        >
-                          <div className="relative aspect-square">
-                            <Image 
-                              src={product.productImage} 
-                              alt={product.productName}
-                              fill
-                              className="object-cover transition-transform group-hover:scale-110"
-                            />
-                            <div className="absolute top-2 right-2 bg-rose-500 text-white text-[9px] font-black px-2 py-1 rounded-full shadow-lg">
-                              SALE
-                            </div>
-                          </div>
-                          <div className="p-3 space-y-2">
-                            <p className="text-[11px] font-bold text-slate-200 line-clamp-1">{product.productName}</p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-emerald-400 font-black text-sm">{product.productPrice?.toLocaleString()}원</span>
-                              <a 
-                                href={product.productUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="bg-white text-slate-900 text-[10px] font-black px-3 py-1.5 rounded-lg hover:bg-emerald-400 hover:text-white transition-colors"
-                              >
-                                구매하기
-                              </a>
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))
-                    ) : (
-                      <div className="w-full py-12 flex flex-col items-center justify-center text-slate-500 gap-2">
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span className="text-xs font-bold">특가 상품 불러오는 중...</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
               {/* Bottom: Progress Message */}
               <motion.p 
                 animate={{ opacity: [0.4, 0.7, 0.4] }}
                 transition={{ duration: 2, repeat: Infinity }}
                 className="text-center text-[10px] text-slate-500 font-medium"
               >
-                영상이 길 경우 최대 50초 정도 소요될 수 있습니다.
+                영상이 길 경우 최대 2분 정도 소요될 수 있습니다.
               </motion.p>
             </div>
           </motion.div>

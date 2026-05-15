@@ -181,13 +181,13 @@ export default function MainPage() {
       </div>
 
       {/* ================= FOOTER ================= */}
-      <footer className="relative z-10 w-full py-10 px-6 border-t border-emerald-500/20 flex flex-col md:flex-row justify-between items-center gap-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
-        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
-          <span className="text-[10px] text-slate-400 tracking-widest uppercase">© 2024 AXIV. AI-Powered Place Curation.</span>
+      <footer className="relative z-10 w-full py-5 px-6 border-t border-emerald-500/20 flex flex-col md:flex-row justify-between items-center gap-3 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
+        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
+          <span className="text-[9px] text-slate-400 tracking-widest uppercase">© 2024 AXIV. AI-Powered Place Curation.</span>
         </div>
-        <div className="flex gap-10">
-          <Link href="/contact" className="text-xs text-slate-400 hover:text-emerald-500 transition-colors font-medium">문의하기</Link>
-          <Link href="/privacy" className="text-xs text-slate-400 hover:text-emerald-500 transition-colors font-medium">개인정보처리방침</Link>
+        <div className="flex gap-6">
+          <Link href="/contact" className="text-[11px] text-slate-400 hover:text-emerald-500 transition-colors font-medium">문의하기</Link>
+          <Link href="/privacy" className="text-[11px] text-slate-400 hover:text-emerald-500 transition-colors font-medium">개인정보처리방침</Link>
         </div>
       </footer>
     </div>

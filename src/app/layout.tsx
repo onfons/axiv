@@ -22,6 +22,7 @@ export default function RootLayout({ children }: PropsWithChildren) {
     <html lang="ko" className={`${inter.variable} h-full`}> 
       <head>
         <meta name="agd-partner-manual-verification" />
+        <meta name="google-adsense-account" content="ca-pub-9783521908231028" />
         <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
       </head>
       <body className="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 h-full flex flex-col font-sans">
