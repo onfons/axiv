@@ -158,8 +158,57 @@ const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임�
 
       if (existingPlace) {
         placeId = existingPlace.id;
+        // 기존 장소 정보 업데이트 (웨이팅/주차 등 최신 정보 반영)
+        const cleanWaitingExisting = (place.waiting_tip && place.waiting_tip !== '없음' && place.waiting_tip !== '정보 없음' && place.waiting_tip.trim().length > 2) ? place.waiting_tip : null;
+        const cleanParkingExisting = (place.parking_info && place.parking_info !== '없음' && place.parking_info !== '정보 없음' && place.parking_info.trim().length > 2) ? place.parking_info : null;
+        if (cleanWaitingExisting || cleanParkingExisting || (place.address && !existingPlace.lat)) {
+          try {
+            let updateLat = existingPlace.lat;
+            let updateLng = existingPlace.lng;
+            if (!updateLat || updateLat === 37.5665) {
+              const addressToGeocode = place.address || place.address_hint;
+              if (addressToGeocode) {
+                const geoRes = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(addressToGeocode)}&limit=1`);
+                const geoData = await geoRes.json();
+                if (geoData.features?.[0]?.geometry?.coordinates) {
+                  updateLng = geoData.features[0].geometry.coordinates[0];
+                  updateLat = geoData.features[0].geometry.coordinates[1];
+                }
+              }
+            }
+            await supabase.from('places').update({
+              waiting_tip: cleanWaitingExisting,
+              parking_info: cleanParkingExisting,
+              lat: updateLat,
+              lng: updateLng
+            }).eq('id', placeId);
+          } catch (e) {
+            console.warn('Update existing place failed:', e);
+          }
+        }
       } else {
-        // Place Insert (via service API) - lat/lng 포함!!
+        // 주소 → 위도/경도 변환 (Geocoding)
+        let geocodedLat = place.lat || 0;
+        let geocodedLng = place.lng || 0;
+        const addressToGeocode = place.address || place.address_hint;
+        if (addressToGeocode && (!place.lat || place.lat === 37.5665)) {
+          try {
+            const geoRes = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(addressToGeocode)}&limit=1`);
+            const geoData = await geoRes.json();
+            if (geoData.features?.[0]?.geometry?.coordinates) {
+              geocodedLng = geoData.features[0].geometry.coordinates[0];
+              geocodedLat = geoData.features[0].geometry.coordinates[1];
+            }
+          } catch (e) {
+            console.warn('Geocoding failed, using existing coords:', e);
+          }
+        }
+
+        // "없음" 값 정리
+        const cleanWaiting = (place.waiting_tip && place.waiting_tip !== '없음' && place.waiting_tip !== '정보 없음' && place.waiting_tip.trim().length > 2) ? place.waiting_tip : null;
+        const cleanParking = (place.parking_info && place.parking_info !== '없음' && place.parking_info !== '정보 없음' && place.parking_info.trim().length > 2) ? place.parking_info : null;
+
+        // Place Insert (via service API)
         const placeRes = await fetch('/api/service-save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -169,15 +218,15 @@ const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임�
               place_name: place.place_name,
               address: place.address || place.address_hint,
               category: place.category,
-              lat: place.lat || 0,
-              lng: place.lng || 0,
+              lat: geocodedLat,
+              lng: geocodedLng,
               phone: place.phone,
               business_hours: place.business_hours || null,
               break_time: place.break_time || null,
               representative_menu: place.menu_with_prices || null,
               place_description: place.place_description || null,
-              waiting_tip: place.waiting_tip || null,
-              parking_info: place.parking_info || null
+              waiting_tip: cleanWaiting,
+              parking_info: cleanParking
             }
           })
         });
