@@ -2,7 +2,7 @@
 
 import { GoogleMap, LoadScriptNext, Marker, Circle, OverlayView } from '@react-google-maps/api';
 
-import { useCallback, useRef, useEffect, useState } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Play, Phone, Clock, X, Navigation } from 'lucide-react';
 import { getCategoryColor } from '@/lib/categories';
@@ -72,7 +72,7 @@ function getMarkerIcon(category: string): google.maps.Icon {
   };
 }
 
-export default function MapContainer({ places }: MapProps) {
+function MapContainerImpl({ places }: MapProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY as string;
   const mapRef = useRef<google.maps.Map | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<any>(null);
@@ -259,7 +259,11 @@ export default function MapContainer({ places }: MapProps) {
 
                     {/* CTA */}
                     <button
-                      onClick={() => router.push(`/place/${selectedPlace.id}`)}
+                      onClick={() => {
+                        setSelectedPlace(null);
+                        // 약간의 지연 후 페이지 이동 (Google Maps 정리 시간 확보)
+                        setTimeout(() => router.push(`/place/${selectedPlace.id}`), 50);
+                      }}
                       className="w-full py-2.5 bg-emerald-500 text-white text-[11px] font-black rounded-xl hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
                     >
                       상세보기
@@ -285,3 +289,5 @@ export default function MapContainer({ places }: MapProps) {
     </div>
   );
 }
+
+export default React.memo(MapContainerImpl);

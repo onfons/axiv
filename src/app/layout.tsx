@@ -27,7 +27,7 @@ export default function RootLayout({ children }: PropsWithChildren) {
       </head>
       <body className="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 h-full flex flex-col font-sans">
         <Header />
-        <main className="flex-1 overflow-auto relative">
+        <main className="flex-1 overflow-hidden relative">
           {children}
         </main>
         <GlobalOverlay />

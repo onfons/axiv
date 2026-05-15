@@ -123,20 +123,20 @@ export default function MainPage() {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="absolute md:relative bottom-0 left-0 right-0 md:right-auto w-full md:w-[400px] h-[55vh] md:h-full bg-white dark:bg-slate-950 z-[80] shadow-2xl md:shadow-none border-r border-slate-100 dark:border-slate-900 flex flex-col"
             >
-              <div className="p-8 pb-4 mt-4">
+              <div className="p-4 pb-2 mt-2">
 
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex flex-col">
-                    <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">Discover</h2>
-                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-1">
-                      {places.length} Places Found
+                    <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tighter leading-none">Discover</h2>
+                    <p className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">
+                      {places.length} Places
                     </p>
                   </div>
                   <button 
                     onClick={() => setIsSidebarOpen(false)}
-                    className="w-10 h-10 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 flex items-center justify-center transition-colors group"
+                    className="w-8 h-8 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 flex items-center justify-center transition-colors group"
                   >
-                    <ChevronLeft className="w-6 h-6 text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white" />
+                    <ChevronLeft className="w-4 h-4 text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white" />
                   </button>
                 </div>
               </div>
@@ -163,9 +163,9 @@ export default function MainPage() {
             initial={{ scale: 0, x: -10 }}
             animate={{ scale: 1, x: 0 }}
             onClick={() => setIsSidebarOpen(true)}
-            className="absolute left-6 top-1/2 -translate-y-1/2 z-[85] w-12 h-12 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
+            className="absolute left-6 bottom-6 z-[85] w-10 h-10 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
           >
-            <ChevronRight className="w-6 h-6 text-slate-900 dark:text-white" />
+            <ChevronRight className="w-5 h-5 text-slate-900 dark:text-white" />
           </motion.button>
         )}
 
@@ -177,14 +177,14 @@ export default function MainPage() {
       </div>
 
       {/* ================= FOOTER ================= */}
-      <footer className="relative z-10 w-full py-5 px-6 border-t border-emerald-500/20 flex flex-col md:flex-row justify-between items-center gap-3 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
-        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
-          <span className="text-[9px] text-slate-400 tracking-widest uppercase">© 2026 FONS - AXIV Place Curation.</span>
+      <footer className="relative z-10 w-full py-2 px-3 border-t border-emerald-500/20 flex flex-col md:flex-row justify-between items-center gap-1 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
+        <div className="flex flex-col md:flex-row items-center gap-1 md:gap-2">
+          <span className="text-[8px] text-slate-400 tracking-widest uppercase">© 2026 FONS - AXIV Place Curation.</span>
         </div>
-        <div className="flex gap-6">
-          <Link href="/terms" className="text-[11px] text-slate-400 hover:text-emerald-500 transition-colors font-medium">이용약관</Link>
-          <Link href="/privacy" className="text-[11px] text-slate-400 hover:text-emerald-500 transition-colors font-medium">개인정보처리방침</Link>
-          <Link href="/contact" className="text-[11px] text-slate-400 hover:text-emerald-500 transition-colors font-medium">문의하기</Link>
+        <div className="flex gap-3">
+          <Link href="/terms" className="text-[10px] text-slate-400 hover:text-emerald-500 transition-colors font-medium">이용약관</Link>
+          <Link href="/privacy" className="text-[10px] text-slate-400 hover:text-emerald-500 transition-colors font-medium">개인정보처리방침</Link>
+          <Link href="/contact" className="text-[10px] text-slate-400 hover:text-emerald-500 transition-colors font-medium">문의하기</Link>
         </div>
       </footer>
     </div>
