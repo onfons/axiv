@@ -9,7 +9,7 @@ const TAVILY_API_KEY = process.env.TAVILY_API_KEY || '';
 /** URL에서 YouTube video ID 추출 */
 function extractVideoId(url: string): string | null {
   const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/|youtube\.com\/live\/)([a-zA-Z0-9_-]{11})/,
     /^([a-zA-Z0-9_-]{11})$/,
   ];
   for (const p of patterns) {
@@ -20,13 +20,14 @@ function extractVideoId(url: string): string | null {
 }
 
 /** YouTube Data API v3로 비디오 정보 조회 */
-async function getYouTubeVideoData(videoId: string) {
+async function getYouTubeVideoData(videoId: string, originalUrl: string) {
+  console.log(`[YouTube API] Fetching info for videoId: ${videoId} (from URL: ${originalUrl})`);
   const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`YouTube API error: ${res.status}`);
   const data = await res.json();
   const item = data.items?.[0];
-  if (!item) throw new Error('YouTube에서 비디오를 찾을 수 없습니다.');
+  if (!item) throw new Error(`YouTube에서 비디오를 찾을 수 없습니다. (ID: ${videoId})`);
 
   const s = item.snippet;
   return {
@@ -187,7 +188,7 @@ export async function POST(req: Request) {
     }
 
     // 1. YouTube API로 비디오 메타데이터 조회
-    const videoData = await getYouTubeVideoData(videoId);
+    const videoData = await getYouTubeVideoData(videoId, url);
 
     // forcePlaceName이 전달된 경우 → 상호명 추출 단계 건너뛰고 바로 Tavily 검색
     if (forcePlaceName && forcePlaceName.length >= 2) {
