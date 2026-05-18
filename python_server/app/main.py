@@ -255,37 +255,48 @@ async def reanalyze_place(request: ReanalyzeRequest):
 
     print(f"🔄 상호명 재검색: '{place_name}'")
 
-    # 1. DuckDuckGo 상세 검색
-    search_context = perform_place_detail_search(place_name)
-    if len(search_context) > 5000:
-        search_context = search_context[:5000]
+    # 1. DuckDuckGo 상세 검색 + 일반 검색 병합
+    detail_context = perform_place_detail_search(place_name)
+    free_context = perform_free_search(f"{place_name} 맛집")
+    search_context = detail_context + "\n" + free_context
+    if len(search_context) > 6000:
+        search_context = search_context[:6000]
 
-    # 2. AI 분석 프롬프트 (장소 상세만)
-    prompt = f"""You are a place information extraction assistant.
+    # 2. AI 분석 프롬프트 (analyze-video와 동일한 수준)
+    prompt = f"""You are a place information extraction assistant. Extract structured place details from the search results below.
 
-Extract structured place details from the search results below.
+Place name: {place_name}
 
-Place name to search: {place_name}
-
-Search Results:
+Web Search Results:
 {search_context}
 
-Respond ONLY with a valid JSON array. Each object must have these fields:
-- place_name: "{place_name}" (fixed)
-- address: full road address
-- phone: phone number (XXX-XXXX-XXXX format)
-- category: one of "food", "cafe", "camping", "fishing", "travel", "accommodation"
-- business_hours: operating hours
-- break_time: break time (empty string if none)
-- menu_with_prices: menu items with prices
-- place_description: 2-3 sentence description
-- waiting_tip: waiting/parking information ("없음" if none)
-- parking_info: parking details ("없음" if none)
-- creator_review: summary review
-- summary: one-line summary
-- timeline_seconds: 0
+Respond ONLY with a valid JSON array containing exactly one object. Example format:
+```json
+[{{
+  "place_name": "{place_name}",
+  "address": "서울시 강남구 역삼동 123-45",
+  "phone": "02-1234-5678",
+  "category": "food",
+  "business_hours": "매일 11:00-22:00",
+  "break_time": "15:00-17:00",
+  "menu_with_prices": "김치찌개 8000원\\n된장찌개 8000원",
+  "place_description": "2-3 sentence description of the place",
+  "waiting_tip": "없음",
+  "parking_info": "없음",
+  "creator_review": "summary review",
+  "summary": "one-line summary",
+  "timeline_seconds": 0
+}}]
+```
 
-If no information found, return []"""
+Rules:
+- category must be one of: food, cafe, camping, fishing, travel, accommodation
+- If no information is found in search results, try to infer reasonable defaults based on the place name
+- break_time: empty string if none
+- waiting_tip: "없음" if none
+- parking_info: "없음" if none
+- Always return exactly one place object in the array, never empty
+- All fields must have values, never empty strings"""
 
     ai_result = call_ai_model(prompt)
 

@@ -28,6 +28,18 @@ interface AppState {
   };
   showConfirm: (title: string, message: string, onConfirm: () => void) => void;
   hideConfirm: () => void;
+
+  // Input Modal State
+  inputModal: {
+    title: string;
+    message: string;
+    visible: boolean;
+    defaultValue: string;
+    placeholder: string;
+    onConfirm: ((value: string) => void) | null;
+  };
+  showInputModal: (title: string, message: string, onConfirm: (value: string) => void, defaultValue?: string, placeholder?: string) => void;
+  hideInputModal: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -52,4 +64,12 @@ export const useAppStore = create<AppState>((set) => ({
     confirm: { title, message, visible: true, onConfirm }
   }),
   hideConfirm: () => set((state) => ({ confirm: { ...state.confirm, visible: false } })),
+
+  inputModal: { title: '', message: '', visible: false, defaultValue: '', placeholder: '', onConfirm: null },
+  showInputModal: (title, message, onConfirm, defaultValue = '', placeholder = '') => set({
+    inputModal: { title, message, visible: true, defaultValue, placeholder, onConfirm }
+  }),
+  hideInputModal: () => set((state) => ({ inputModal: { ...state.inputModal, visible: false } })),
 }));
+
+export type { AppState };
