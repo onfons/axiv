@@ -108,6 +108,18 @@ const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임�
       }
       
       if (!response.ok || data.error) throw new Error(data.error || '알 수 없는 서버 에러');
+
+      // 추출된 장소들의 상호명 검증
+      const places = data.places || [];
+      const validPlaces = places.filter((p: any) => {
+        const name = (p.place_name || '').trim();
+        return name.length >= 2 && !['미상', '정보 없음', '정보없음', '알 수 없음', '알수없음', '모름'].includes(name);
+      });
+
+      if (validPlaces.length === 0) {
+        throw new Error('영상에서 정확한 상호명을 찾을 수 없습니다. 상호명이 더 명확하게 나오는 영상으로 다시 시도해주세요.');
+      }
+
       setResult(data);
       fetchCoupangByPlace(data.places);
       showToast('분석이 완료되었습니다.', 'success');
