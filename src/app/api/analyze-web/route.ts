@@ -132,10 +132,24 @@ Rules:
 
   try {
     let cleaned = aiResult.trim();
-    if (cleaned.startsWith('```json')) cleaned = cleaned.slice(7);
-    else if (cleaned.startsWith('```')) cleaned = cleaned.slice(3);
-    if (cleaned.endsWith('```')) cleaned = cleaned.slice(0, -3);
-    cleaned = cleaned.trim();
+    
+    // 보다 안정적인 JSON 추출 (AI가 앞뒤에 불필요한 텍스트를 붙였을 경우 대비)
+    const jsonMatch = cleaned.match(/\[\s*\{[\s\S]*\}\s*\]/);
+    if (jsonMatch) {
+      cleaned = jsonMatch[0];
+    } else {
+      // 배열이 아닌 단일 객체일 경우
+      const objMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (objMatch) {
+        cleaned = `[${objMatch[0]}]`;
+      } else {
+        // 기존 백틱 제거 로직 폴백
+        if (cleaned.startsWith('```json')) cleaned = cleaned.slice(7);
+        else if (cleaned.startsWith('```')) cleaned = cleaned.slice(3);
+        if (cleaned.endsWith('```')) cleaned = cleaned.slice(0, -3);
+        cleaned = cleaned.trim();
+      }
+    }
 
     const places = JSON.parse(cleaned);
     if (!Array.isArray(places)) return [places];
@@ -218,7 +232,7 @@ Response format (choose one):
     const placeName = placeNameRaw.replace(/["'']/g, '').trim();
 
     const isNoPlace = !placeName ||
-      placeName === 'NO_PLACE_FOUND' ||
+      placeName.includes('NO_PLACE_FOUND') ||
       placeName.length < 2 ||
       ['미상', '정보 없음', '정보없음', '알 수 없음', '알수없음', '모름', 'unknown'].includes(placeName);
 
