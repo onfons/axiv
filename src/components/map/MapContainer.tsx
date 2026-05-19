@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Navigation } from 'lucide-react';
+import { Play, Phone, Clock, X, Navigation, Heart, MapPin } from 'lucide-react';
 import { getCategoryColor, getCategoryIcon } from '@/lib/categories';
 import { supabase } from '@/lib/supabaseClient';
 import { useAppStore } from '@/lib/store';
@@ -66,7 +66,10 @@ function MapContainerImpl({ places, onBoundsChange }: MapProps) {
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const userMarkerRef = useRef<L.Marker | null>(null);
   const userCircleRef = useRef<L.Circle | null>(null);
-    const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<any>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const { showToast } = useAppStore();
   const router = useRouter();
@@ -173,38 +176,41 @@ function MapContainerImpl({ places, onBoundsChange }: MapProps) {
         icon: createMarkerIcon(place.category),
       });
 
-      // Create popup content HTML
-      const emoji = getCategoryIcon(place.category);
-      const popupContent = `
-        <div class="map-popup-content">
-          <div class="map-popup-header">
-            <span class="map-popup-category">${emoji} ${place.category}</span>
-            <h3 class="map-popup-title">${place.place_name}</h3>
-          </div>
-          <div class="map-popup-body">
-            <p class="map-popup-address">${place.address || ''}</p>
-            ${place.phone ? `<p class="map-popup-phone">${place.phone}</p>` : ''}
-            ${place.representative_menu ? `<p class="map-popup-menu">${place.representative_menu}</p>` : ''}
-          </div>
-          <a href="/place/${place.id}" class="map-popup-link">상세보기 →</a>
-        </div>
-      `;
-
-      marker.bindPopup(popupContent, {
-        maxWidth: 280,
-        className: 'custom-map-popup',
-        offset: [0, -42],
-      });
-
       marker.on('click', () => {
-        marker.openPopup();
-        map.flyTo([lat, lng], 16, { duration: 0.5 });
+        setSelectedPlace(place);
       });
 
       marker.addTo(map);
       markerMap.set(place.id, marker);
     });
   }, [places]);
+
+  // Selected place info window
+  useEffect(() => {
+    if (!selectedPlace) return;
+    // Fly to selected place
+    const lat = Number(selectedPlace.lat);
+    const lng = Number(selectedPlace.lng);
+    if (lat && lng && mapRef.current) {
+      mapRef.current.flyTo([lat, lng], 16, { duration: 0.5 });
+    }
+  }, [selectedPlace]);
+
+  // Favorite check
+  useEffect(() => {
+    if (!selectedPlace || !currentUser) {
+      setIsFavorite(false);
+      return;
+    }
+    fetch('/api/service-save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'check_favorite',
+        data: { userId: currentUser.id, placeId: selectedPlace.id }
+      })
+    }).then(r => r.json()).then(d => setIsFavorite(!!d.isFavorite)).catch(() => setIsFavorite(false));
+  }, [selectedPlace, currentUser]);
 
   const handleCenterUser = () => {
     if (userLocation && mapRef.current) {
@@ -216,6 +222,161 @@ function MapContainerImpl({ places, onBoundsChange }: MapProps) {
     <div className="relative h-full w-full">
       {/* Map Container */}
       <div ref={mapContainerRef} className="h-full w-full" />
+
+      {/* Selected Place Info Window */}
+      {selectedPlace && (
+        <div className="absolute bottom-6 left-4 right-4 md:left-6 md:right-auto md:w-[380px] z-[9999] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4 duration-200">
+          {/* Close button */}
+          <button
+            onClick={() => setSelectedPlace(null)}
+            className="absolute top-3 right-3 z-10 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-4 h-4 text-gray-600" />
+          </button>
+
+          {/* Thumbnail / YouTube video */}
+          {selectedPlace.youtube_video_id ? (
+            <div className="relative w-full h-40 bg-black cursor-pointer" onClick={() => setSelectedPlace(null)}>
+              <img
+                src={`https://img.youtube.com/vi/${selectedPlace.youtube_video_id}/hqdefault.jpg`}
+                alt={selectedPlace.place_name}
+                className="w-full h-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                  <Play className="w-5 h-5 text-red-500 ml-0.5" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full h-2 bg-gradient-to-r from-emerald-400 to-emerald-600" />
+          )}
+
+          {/* Content */}
+          <div className="p-4">
+            {/* Category & Name */}
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{
+                backgroundColor: `${getCategoryColor(selectedPlace.category)}20`,
+                color: getCategoryColor(selectedPlace.category)
+              }}>
+                {getCategoryIcon(selectedPlace.category)} {selectedPlace.category}
+              </span>
+              {selectedPlace.waiting_available && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">웨이팅</span>
+              )}
+              {selectedPlace.parking_available && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">주차가능</span>
+              )}
+            </div>
+
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{selectedPlace.place_name}</h3>
+
+            {/* Address */}
+            <div className="flex items-start gap-1.5 mb-2 text-sm text-gray-500">
+              <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-gray-400" />
+              <span className="leading-snug">{selectedPlace.address}</span>
+            </div>
+
+            {/* Info grid */}
+            <div className="grid grid-cols-1 gap-2 mb-3 text-sm">
+              {selectedPlace.representative_menu && (
+                <div className="flex items-start gap-2">
+                  <span className="text-gray-400 flex-shrink-0 w-12 text-xs">메뉴</span>
+                  <span className="text-gray-700 font-medium">{selectedPlace.representative_menu}</span>
+                </div>
+              )}
+              {selectedPlace.business_hours && (
+                <div className="flex items-start gap-2">
+                  <Clock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-gray-400" />
+                  <span className="text-gray-600 leading-snug">{selectedPlace.business_hours}</span>
+                </div>
+              )}
+              {selectedPlace.break_time && (
+                <div className="flex items-start gap-2">
+                  <Clock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-gray-400 opacity-0" />
+                  <span className="text-orange-500 text-xs font-medium">브레이크타임: {selectedPlace.break_time}</span>
+                </div>
+              )}
+              {selectedPlace.phone && (
+                <div className="flex items-start gap-2">
+                  <Phone className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-gray-400" />
+                  <span className="text-gray-600">{selectedPlace.phone}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2">
+              {/* Favorite */}
+              <button
+                onClick={async () => {
+                  if (!currentUser) {
+                    showToast?.('로그인이 필요한 기능입니다.', 'warning');
+                    return;
+                  }
+                  if (favoriteLoading) return;
+                  setFavoriteLoading(true);
+                  try {
+                    const res = await fetch('/api/service-save', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        action: 'toggle_favorite',
+                        data: {
+                          userId: currentUser.id,
+                          placeId: selectedPlace.id,
+                          currentlyFavorite: isFavorite,
+                        }
+                      })
+                    });
+                    const d = await res.json();
+                    if (d.success) {
+                      setIsFavorite(!isFavorite);
+                      showToast?.(isFavorite ? '즐겨찾기에서 제거했습니다.' : '즐겨찾기에 추가했습니다.', 'success');
+                    }
+                  } catch (e) {
+                    console.error('Toggle favorite error:', e);
+                  } finally {
+                    setFavoriteLoading(false);
+                  }
+                }}
+                className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                  isFavorite
+                    ? 'bg-red-50 text-red-500 hover:bg-red-100'
+                    : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-red-400'
+                }`}
+              >
+                <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+              </button>
+
+              {/* Detail page */}
+              <button
+                onClick={() => router.push(`/place/${selectedPlace.id}`)}
+                className="flex-1 h-10 rounded-xl font-semibold text-white text-sm transition-opacity hover:opacity-90"
+                style={{ backgroundColor: getCategoryColor(selectedPlace.category) }}
+              >
+                상세보기
+              </button>
+
+              {/* External map links */}
+              <button
+                onClick={() => window.open(`https://map.naver.com/p/search/${encodeURIComponent(selectedPlace.place_name)}`, '_blank')}
+                className="flex-shrink-0 h-10 px-3 rounded-xl bg-[#03C75A] text-white text-xs font-semibold hover:opacity-90 transition-opacity"
+              >
+                네이버
+              </button>
+              <button
+                onClick={() => window.open(`https://map.kakao.com/link/search/${encodeURIComponent(selectedPlace.place_name)}`, '_blank')}
+                className="flex-shrink-0 h-10 px-3 rounded-xl bg-[#FEE500] text-[#191919] text-xs font-semibold hover:opacity-90 transition-opacity"
+              >
+                카카오
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Controls - my location */}
       <div className="fixed bottom-28 right-6 z-[9999]">
