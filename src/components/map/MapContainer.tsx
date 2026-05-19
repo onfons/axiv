@@ -371,11 +371,12 @@ function MapContainerImpl({ places }: MapProps) {
         </div>
       )}
 
-      {/* Floating Controls — 내 위치 버튼 */}
-      <div className="absolute bottom-8 right-6 z-50">
+      {/* Floating Controls — 내 위치 버튼 (fixed로 항상 최상단) */}
+      <div className="fixed bottom-8 right-6 z-[9999]">
         <button
           onClick={handleCenterUser}
-          className="w-14 h-14 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] border-2 border-emerald-500 flex items-center justify-center hover:bg-emerald-500 hover:scale-110 active:scale-95 transition-all duration-200 group"
+          className="w-14 h-14 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.25)] border-2 border-emerald-500 flex items-center justify-center hover:bg-emerald-500 hover:scale-110 active:scale-90 transition-all duration-200 group"
+          style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.25), 0 0 0 4px rgba(16,185,129,0.15)' }}
         >
           <Navigation className="w-6 h-6 text-emerald-500 group-hover:text-white transition-colors" />
         </button>
