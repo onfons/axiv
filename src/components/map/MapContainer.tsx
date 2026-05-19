@@ -185,33 +185,6 @@ function MapContainerImpl({ places, onBoundsChange }: MapProps) {
     });
   }, [places]);
 
-  // Selected place info window
-  useEffect(() => {
-    if (!selectedPlace) return;
-    // Fly to selected place
-    const lat = Number(selectedPlace.lat);
-    const lng = Number(selectedPlace.lng);
-    if (lat && lng && mapRef.current) {
-      mapRef.current.flyTo([lat, lng], 16, { duration: 0.5 });
-    }
-  }, [selectedPlace]);
-
-  // Favorite check
-  useEffect(() => {
-    if (!selectedPlace || !currentUser) {
-      setIsFavorite(false);
-      return;
-    }
-    fetch('/api/service-save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'check_favorite',
-        data: { userId: currentUser.id, placeId: selectedPlace.id }
-      })
-    }).then(r => r.json()).then(d => setIsFavorite(!!d.isFavorite)).catch(() => setIsFavorite(false));
-  }, [selectedPlace, currentUser]);
-
   const handleCenterUser = () => {
     if (userLocation && mapRef.current) {
       mapRef.current.flyTo(userLocation, 15, { duration: 0.5 });
@@ -224,7 +197,12 @@ function MapContainerImpl({ places, onBoundsChange }: MapProps) {
       <div ref={mapContainerRef} className="h-full w-full" />
 
       {/* Selected Place Info Window */}
-      {selectedPlace && (
+      {selectedPlace && (() => {
+        const cpList = selectedPlace.content_places || [];
+        // youtube_video_id 단일 필드도 content_places에 포함
+        const hasContentPlaces = cpList.length > 0;
+
+        return (
         <>
           {/* Backdrop */}
           <div
@@ -232,82 +210,129 @@ function MapContainerImpl({ places, onBoundsChange }: MapProps) {
             onClick={() => setSelectedPlace(null)}
           />
 
-          {/* Card - positioned at bottom-center over the pin area */}
-          <div className="absolute bottom-[calc(50%+20px)] left-1/2 -translate-x-1/2 z-[9999] w-[340px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200">
-            {/* YouTube Thumbnail - full width, prominent */}
-            {selectedPlace.youtube_video_id ? (
-              <a
-                href={`https://www.youtube.com/watch?v=${selectedPlace.youtube_video_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative block w-full aspect-video bg-gray-900 cursor-pointer group"
+          {/* Card */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-[360px] max-h-[85vh] bg-white rounded-2xl shadow-2xl overflow-y-auto animate-in zoom-in-95 fade-in duration-200">
+            {/* Header with close button */}
+            <div className="sticky top-0 z-10 flex items-center justify-between p-3 pb-2 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{
+                backgroundColor: `${getCategoryColor(selectedPlace.category)}20`,
+                color: getCategoryColor(selectedPlace.category)
+              }}>
+                {getCategoryIcon(selectedPlace.category)} {selectedPlace.category}
+              </span>
+              <button
+                onClick={() => setSelectedPlace(null)}
+                className="w-7 h-7 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors"
               >
-                <img
-                  src={`https://img.youtube.com/vi/${selectedPlace.youtube_video_id}/maxresdefault.jpg`}
-                  alt={selectedPlace.place_name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const img = e.target as HTMLImageElement;
-                    if (!img.dataset.fallback) {
-                      img.dataset.fallback = '1';
-                      img.src = `https://img.youtube.com/vi/${selectedPlace.youtube_video_id}/hqdefault.jpg`;
-                    }
-                  }}
-                />
-                <div className="absolute inset-0 bg-black/25 group-hover:bg-black/35 transition-colors flex items-center justify-center">
-                  <div className="w-14 h-14 bg-white/95 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-                    <Play className="w-6 h-6 text-red-500 ml-1" />
-                  </div>
-                </div>
-                {/* Close button on thumbnail */}
-                <button
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedPlace(null); }}
-                  className="absolute top-2 right-2 w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
-                >
-                  <X className="w-4 h-4 text-white" />
-                </button>
-              </a>
-            ) : (
-              <>
-                <div className="w-full h-2 bg-gradient-to-r from-emerald-400 to-emerald-600" />
-                {/* Close button when no thumbnail */}
-                <button
-                  onClick={() => setSelectedPlace(null)}
-                  className="absolute top-2 right-2 w-8 h-8 bg-gray-200/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
-                >
-                  <X className="w-4 h-4 text-gray-600" />
-                </button>
-              </>
-            )}
+                <X className="w-3.5 h-3.5 text-gray-500" />
+              </button>
+            </div>
 
-            {/* Info Section */}
-            <div className="p-4">
-              {/* Category + badges */}
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{
-                  backgroundColor: `${getCategoryColor(selectedPlace.category)}20`,
-                  color: getCategoryColor(selectedPlace.category)
-                }}>
-                  {getCategoryIcon(selectedPlace.category)} {selectedPlace.category}
-                </span>
-                {selectedPlace.waiting_available && (
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">웨이팅</span>
-                )}
-                {selectedPlace.parking_available && (
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">주차가능</span>
-                )}
-              </div>
-
-              {/* Name */}
+            <div className="p-3">
+              {/* Place name */}
               <h3 className="text-base font-bold text-gray-900 leading-tight mb-1">{selectedPlace.place_name}</h3>
 
               {/* Address */}
-              <div className="flex items-start gap-1 mb-2 text-xs text-gray-500">
+              <div className="flex items-start gap-1 mb-3 text-xs text-gray-500">
                 <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 text-gray-400" />
                 <span className="leading-snug">{selectedPlace.address}</span>
               </div>
 
-              {/* Info items */}
+              {/* YouTube creator list */}
+              {hasContentPlaces ? (
+                <div className="mb-3 space-y-2">
+                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">리뷰 유튜버</p>
+                  {cpList.map((cp: any, i: number) => {
+                    const videoId = cp.contents?.video_id;
+                    const thumbnailUrl = cp.contents?.thumbnail_url;
+                    const creatorName = cp.contents?.creator_name;
+                    const timelineSec = cp.timeline_seconds;
+                    const summary = cp.summary || cp.creator_review;
+                    const ytUrl = videoId
+                      ? `https://youtube.com/watch?v=${videoId}${timelineSec ? `&t=${timelineSec}s` : ''}`
+                      : null;
+
+                    const ytThumb = thumbnailUrl || (videoId
+                      ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+                      : null);
+
+                    return (
+                      <a
+                        key={i}
+                        href={ytUrl || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex gap-3 p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group"
+                      >
+                        {/* 왼쪽: 썸네일 + 재생버튼 */}
+                        <div className="relative w-[88px] h-[50px] rounded-lg overflow-hidden shrink-0 bg-gray-200">
+                          {ytThumb && (
+                            <img
+                              src={ytThumb}
+                              alt={creatorName || ''}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-black/15 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                            <Play className="w-5 h-5 text-white fill-white drop-shadow-md" />
+                          </div>
+                          {timelineSec && (
+                            <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-medium px-1 py-px rounded">
+                              {Math.floor(timelineSec / 60)}:{String(Math.floor(timelineSec % 60)).padStart(2, '0')}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 오른쪽: 채널명 + 리뷰 */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            {creatorName && (
+                              <span className="text-sm font-bold text-gray-900 truncate">{creatorName}</span>
+                            )}
+                            <span className="text-[10px] text-red-500 font-medium shrink-0">보기</span>
+                          </div>
+                          {summary && (
+                            <p className="text-[11px] text-gray-500 leading-snug line-clamp-2">
+                              {summary}
+                            </p>
+                          )}
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : selectedPlace.youtube_video_id ? (
+                /* Fallback: 단일 youtube_video_id 필드 */
+                <div className="mb-3">
+                  <a
+                    href={`https://www.youtube.com/watch?v=${selectedPlace.youtube_video_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative block w-full aspect-video rounded-xl overflow-hidden bg-gray-900 cursor-pointer group"
+                  >
+                    <img
+                      src={`https://img.youtube.com/vi/${selectedPlace.youtube_video_id}/maxresdefault.jpg`}
+                      alt={selectedPlace.place_name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        if (!img.dataset.fallback) {
+                          img.dataset.fallback = '1';
+                          img.src = `https://img.youtube.com/vi/${selectedPlace.youtube_video_id}/hqdefault.jpg`;
+                        }
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/25 group-hover:bg-black/35 transition-colors flex items-center justify-center">
+                      <div className="w-12 h-12 bg-white/95 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                        <Play className="w-5 h-5 text-red-500 ml-0.5" />
+                      </div>
+                    </div>
+                  </a>
+                </div>
+              ) : null}
+
+              {/* Business info */}
               <div className="space-y-1.5 mb-3">
                 {selectedPlace.representative_menu && (
                   <div className="flex items-center gap-2 text-sm">
@@ -335,79 +360,83 @@ function MapContainerImpl({ places, onBoundsChange }: MapProps) {
                 )}
               </div>
 
-              {/* Primary buttons: favorite + detail */}
-              <div className="flex items-center gap-2 mb-2">
-                <button
-                  onClick={async () => {
-                    if (!currentUser) {
-                      showToast?.('로그인이 필요한 기능입니다.', 'info');
-                      return;
-                    }
-                    if (favoriteLoading) return;
-                    setFavoriteLoading(true);
-                    try {
-                      const res = await fetch('/api/service-save', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          action: 'toggle_favorite',
-                          data: {
-                            userId: currentUser.id,
-                            placeId: selectedPlace.id,
-                            currentlyFavorite: isFavorite,
-                          }
-                        })
-                      });
-                      const d = await res.json();
-                      if (d.success) {
-                        setIsFavorite(!isFavorite);
-                        showToast?.(isFavorite ? '즐겨찾기에서 제거했습니다.' : '즐겨찾기에 추가했습니다.', 'success');
+              {/* Buttons */}
+              <div className="space-y-2">
+                {/* Favorite + Detail */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      if (!currentUser) {
+                        showToast?.('로그인이 필요한 기능입니다.', 'info');
+                        return;
                       }
-                    } catch (e) {
-                      console.error('Toggle favorite error:', e);
-                    } finally {
-                      setFavoriteLoading(false);
-                    }
-                  }}
-                  className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                    isFavorite
-                      ? 'bg-red-50 text-red-500 hover:bg-red-100'
-                      : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-red-400'
-                  }`}
-                >
-                  <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
-                </button>
+                      if (favoriteLoading) return;
+                      setFavoriteLoading(true);
+                      try {
+                        const res = await fetch('/api/service-save', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            action: 'toggle_favorite',
+                            data: {
+                              userId: currentUser.id,
+                              placeId: selectedPlace.id,
+                              currentlyFavorite: isFavorite,
+                            }
+                          })
+                        });
+                        const d = await res.json();
+                        if (d.success) {
+                          setIsFavorite(!isFavorite);
+                          showToast?.(isFavorite ? '즐겨찾기에서 제거했습니다.' : '즐겨찾기에 추가했습니다.', 'success');
+                        }
+                      } catch (e) {
+                        console.error('Toggle favorite error:', e);
+                      } finally {
+                        setFavoriteLoading(false);
+                      }
+                    }}
+                    className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                      isFavorite
+                        ? 'bg-red-50 text-red-500 hover:bg-red-100'
+                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-red-400'
+                    }`}
+                  >
+                    <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+                  </button>
 
-                <button
-                  onClick={() => router.push(`/place/${selectedPlace.id}`)}
-                  className="flex-1 h-10 rounded-xl font-semibold text-white text-sm transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: getCategoryColor(selectedPlace.category) }}
-                >
-                  상세보기
-                </button>
-              </div>
+                  <button
+                    onClick={() => router.push(`/place/${selectedPlace.id}`)}
+                    className="flex-1 h-10 rounded-xl font-semibold text-white text-sm transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: getCategoryColor(selectedPlace.category) }}
+                  >
+                    상세보기
+                  </button>
+                </div>
 
-              {/* Secondary buttons: map links */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => window.open(`https://map.naver.com/p/search/${encodeURIComponent(selectedPlace.place_name)}`, '_blank')}
-                  className="flex-1 h-10 rounded-xl bg-[#03C75A] text-white text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5"
-                >
-                  <span className="text-base font-bold">N</span>
-                  <span>네이버 지도</span>
-                </button>
-                <button
-                  onClick={() => window.open(`https://map.kakao.com/link/search/${encodeURIComponent(selectedPlace.place_name)}`, '_blank')}
-                  className="flex-1 h-10 rounded-xl bg-[#FEE500] text-[#191919] text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5"
-                >
-                  <span className="text-base font-bold">K</span>
-                  <span>카카오맵</span>
-                </button>
+                {/* Map links */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => window.open(`https://map.naver.com/p/search/${encodeURIComponent(selectedPlace.place_name)}`, '_blank')}
+                    className="flex-1 h-10 rounded-xl bg-[#03C75A] text-white text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5"
+                  >
+                    <span className="text-base font-bold">N</span>
+                    <span>네이버 지도</span>
+                  </button>
+                  <button
+                    onClick={() => window.open(`https://map.kakao.com/link/search/${encodeURIComponent(selectedPlace.place_name)}`, '_blank')}
+                    className="flex-1 h-10 rounded-xl bg-[#FEE500] text-[#191919] text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5"
+                  >
+                    <span className="text-base font-bold">K</span>
+                    <span>카카오맵</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </>
-      )}
+        );
+      })()}
 
       {/* Floating Controls - my location */}
       <div className="fixed bottom-28 right-6 z-[9999]">

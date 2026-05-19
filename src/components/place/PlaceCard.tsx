@@ -200,50 +200,38 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
             {place.content_places && place.content_places.length > 0 && (
               <div className="flex items-center gap-2 pt-0.5">
                 {ytUrl && (
-                  <a
-                    href={ytUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={e => e.stopPropagation()}
-                    className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors"
+                  <span
+                    onClick={e => { e.stopPropagation(); e.preventDefault(); window.open(ytUrl, '_blank', 'noopener,noreferrer'); }}
+                    className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
                   >
                     <Play className="w-2.5 h-2.5 text-rose-500 fill-rose-500" />
                     <span className="text-[8px] font-bold text-rose-600">
                       {timelineSec ? `@${toTimestamp(timelineSec)}` : '유튜브'}
                     </span>
-                  </a>
+                  </span>
                 )}
                 {timelineSec && videoId && (
-                  <a
-                    href={`https://youtube.com/watch?v=${videoId}&t=${timelineSec}s`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={e => e.stopPropagation()}
-                    className="shrink-0 text-[8px] text-slate-400 hover:text-slate-600 transition-colors"
+                  <span
+                    onClick={e => { e.stopPropagation(); e.preventDefault(); window.open(`https://youtube.com/watch?v=${videoId}&t=${timelineSec}s`, '_blank', 'noopener,noreferrer'); }}
+                    className="shrink-0 text-[8px] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                   >
                     이 장면 보기 →
-                  </a>
+                  </span>
                 )}
                 {place.place_name && (
                   <>
-                    <a
-                      href={`https://map.naver.com/v5/search/${encodeURIComponent(place.place_name + ' ' + (place.address || ''))}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={e => e.stopPropagation()}
-                      className="shrink-0 px-1.5 py-0.5 rounded text-[8px] font-bold text-green-600 bg-green-50 hover:bg-green-100 transition-colors"
+                    <span
+                      onClick={e => { e.stopPropagation(); e.preventDefault(); window.open(`https://map.naver.com/v5/search/${encodeURIComponent(place.place_name + ' ' + (place.address || ''))}`, '_blank', 'noopener,noreferrer'); }}
+                      className="shrink-0 px-1.5 py-0.5 rounded text-[8px] font-bold text-green-600 bg-green-50 hover:bg-green-100 transition-colors cursor-pointer"
                     >
                       N
-                    </a>
-                    <a
-                      href={`https://map.kakao.com/link/search/${encodeURIComponent(place.place_name + ' ' + (place.address || ''))}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={e => e.stopPropagation()}
-                      className="shrink-0 px-1.5 py-0.5 rounded text-[8px] font-bold text-yellow-600 bg-yellow-50 hover:bg-yellow-100 transition-colors"
+                    </span>
+                    <span
+                      onClick={e => { e.stopPropagation(); e.preventDefault(); window.open(`https://map.kakao.com/link/search/${encodeURIComponent(place.place_name + ' ' + (place.address || ''))}`, '_blank', 'noopener,noreferrer'); }}
+                      className="shrink-0 px-1.5 py-0.5 rounded text-[8px] font-bold text-yellow-600 bg-yellow-50 hover:bg-yellow-100 transition-colors cursor-pointer"
                     >
                       K
-                    </a>
+                    </span>
                   </>
                 )}
               </div>

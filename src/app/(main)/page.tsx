@@ -15,7 +15,24 @@ export default function MainPage() {
   const [places, setPlaces] = useState<any[]>([]);
   const [mrtDataMap, setMrtDataMap] = useState<Record<string, any>>({});
   const { selectedCategory, searchQuery, userLocation, setMapBounds } = useAppStore();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sidebarReady, setSidebarReady] = useState(false);
+
+  // sessionStorage에서 사이드바 상태 복원 (뒤로가기 시 닫힌 상태 유지)
+  useEffect(() => {
+    const stored = sessionStorage.getItem('sidebarOpen');
+    if (stored !== null) {
+      setIsSidebarOpen(stored === 'true');
+    }
+    setSidebarReady(true);
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarOpen(prev => {
+      sessionStorage.setItem('sidebarOpen', String(!prev));
+      return !prev;
+    });
+  }, []);
   const [mapBounds, setLocalMapBounds] = useState<{ swLat: number; swLng: number; neLat: number; neLng: number } | null>(null);
 
   // MyRealTrip 데이터를 병렬로 가져오는 함수
@@ -159,13 +176,13 @@ export default function MainPage() {
           
           {/* Sidebar */}
           <AnimatePresence initial={false}>
-            {isSidebarOpen && (
+            {sidebarReady && isSidebarOpen && (
               <motion.aside
                 initial={{ x: -420 }}
                 animate={{ x: 0 }}
                 exit={{ x: -420 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="absolute md:relative bottom-0 left-6 right-0 md:right-auto w-[calc(100%-24px)] md:w-full h-[50vh] md:h-[calc(100vh-60px-48px)] bg-white dark:bg-slate-950 z-[80] shadow-2xl md:shadow-xl border-r border-slate-100 dark:border-slate-900 flex flex-col md:rounded-2xl md:absolute md:top-[calc(50%+32px)] md:left-6 md:w-[calc(100%-48px)]"
+                className="absolute md:absolute bottom-0 left-6 right-0 md:right-auto w-[calc(100%-24px)] md:w-[calc(100%-48px)] h-[50vh] md:h-[45vh] bg-white dark:bg-slate-950 z-[80] shadow-2xl md:shadow-xl border-r border-slate-100 dark:border-slate-900 flex flex-col md:rounded-2xl md:top-[calc(50%+12px)] md:left-6"
               >
                 <div className="p-4 pb-2 mt-2">
 
@@ -191,7 +208,7 @@ export default function MainPage() {
 
           {/* toggle button */}
           <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            onClick={toggleSidebar}
             className="absolute left-6 top-1/2 -translate-y-1/2 z-[90] w-10 h-10 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
           >
             {isSidebarOpen ? (
@@ -208,7 +225,7 @@ export default function MainPage() {
             {/* hotplace button when sidebar closed */}
             {!isSidebarOpen && places.length > 0 && (
               <button
-                onClick={() => setIsSidebarOpen(true)}
+                onClick={toggleSidebar}
                 className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[100] px-5 py-2.5 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.2)] border border-emerald-500/30 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
               >
                 이 지역 유튜브 핫플 {places.length}곳 보기
