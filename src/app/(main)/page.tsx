@@ -189,7 +189,7 @@ export default function MainPage() {
             )}
           </AnimatePresence>
 
-          {/* Toggle Button — 좌측 가운데 (동일 위치) */}
+          {/* toggle button */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="absolute left-6 top-1/2 -translate-y-1/2 z-[90] w-10 h-10 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
@@ -205,7 +205,7 @@ export default function MainPage() {
           <div className="flex-1 h-full z-0 relative">
             <MapContainer places={places} onBoundsChange={handleBoundsChange} />
 
-            {/* "이 지역 유튜브 핫플 보기" 버튼 — 사이드바가 닫혀있고 장소가 있을 때만 */}
+            {/* hotplace button when sidebar closed */}
             {!isSidebarOpen && places.length > 0 && (
               <button
                 onClick={() => setIsSidebarOpen(true)}

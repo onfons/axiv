@@ -682,7 +682,7 @@ const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임�
                         )}
                       </div>
 
-                      {/* 가게 상세 설명 + AI 요약 */}
+                      {/* place description */}
                       <div className="space-y-4">
                         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50">
                           <div className="flex items-center gap-2 mb-3">

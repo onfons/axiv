@@ -65,7 +65,7 @@ function CoupangProductCard({ product }: { product: any }) {
       className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50 hover:border-emerald-200 dark:hover:border-emerald-700/50 hover:shadow-md transition-all group shrink-0"
       style={{ minWidth: 0 }}
     >
-      {/* 상품 이미지 */}
+      {/* product image */}
       <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0">
         {product.productImage ? (
           <img
@@ -77,7 +77,7 @@ function CoupangProductCard({ product }: { product: any }) {
           <div className="w-full h-full flex items-center justify-center text-slate-300 text-lg">🛒</div>
         )}
       </div>
-      {/* 상품 정보 */}
+      {/* product info */}
       <div className="flex-1 min-w-0">
         <p className="text-xs font-bold text-slate-900 dark:text-white truncate leading-snug group-hover:text-emerald-600 transition-colors">
           {product.productName}
@@ -120,7 +120,7 @@ function AffiliateSection({ category, placeName }: { category: string; placeName
 
   return (
     <div className="space-y-6">
-      {/* ── 쿠팡 상품 섹션 ── */}
+      {/* coupon section */}
       {!coupangLoading && coupangProducts.length > 0 && (
         <div className="bg-white dark:bg-slate-900 rounded-[40px] p-8 shadow-xl border border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3 mb-6">
@@ -146,7 +146,7 @@ function AffiliateSection({ category, placeName }: { category: string; placeName
           </p>
         </div>
       )}
-      {/* ── 제휴 링크 섹션 ── */}
+      {/* partner links */}
       <div className="bg-white dark:bg-slate-900 rounded-[40px] p-8 shadow-xl border border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-2 h-8 bg-amber-500 rounded-full" />
@@ -417,9 +417,7 @@ export default function PlaceDetailPage() {
               priority
             />
           ) : (
-            <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-               <span className="text-9xl opacity-20">🍽️</span>
-            </div>
+            <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-950" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
           
@@ -453,10 +451,11 @@ export default function PlaceDetailPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Recommenders first, then Business Information */}
+        <div className="flex flex-col gap-8">
 
-          {/* Recommenders Section — moved to top */}
-          <div className="lg:col-span-2 lg:order-1 order-1">
+          {/* Recommenders Section */}
+          <div className="order-1">
              <div className="flex items-center gap-4 mb-8">
                <div className="w-2 h-10 bg-emerald-500 rounded-full" />
                <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">
@@ -510,8 +509,8 @@ export default function PlaceDetailPage() {
              </div>
           </div>
 
-          {/* Detailed Info Card — moved to bottom */}
-          <div className="lg:col-span-1 lg:order-2 order-2 space-y-6">
+          {/* Detailed Info Card */}
+          <div className="order-2 space-y-6">
             <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-xl border border-white dark:border-slate-800">
               <h2 className="text-xs font-black text-slate-400 mb-8 uppercase tracking-widest">Business Information</h2>
               
@@ -611,7 +610,7 @@ export default function PlaceDetailPage() {
 
 
 
-                {/* DB 정보를 그대로 보여주기 위해 summary 컬럼 활용 */}
+                {/* use summary column from DB */}
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0">
                     <ShoppingBag className="w-5 h-5 text-emerald-500" />

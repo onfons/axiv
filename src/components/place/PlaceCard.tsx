@@ -114,7 +114,7 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
       <Link href={`/place/${place.id}`} className="block">
         <div className="flex gap-3 p-3 rounded-[20px] bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-slate-100 dark:border-slate-800 transition-all duration-300 shadow-sm hover:shadow-md">
 
-          {/* Thumbnail — 유튜버 썸네일 우선 */}
+          {/* Thumbnail - youtuber thumbnail */}
           <div className="relative w-[72px] h-[72px] md:w-[88px] md:h-[88px] rounded-[16px] overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800">
             {(firstCp?.contents?.thumbnail_url || place.thumbnail_url || mrtData?.image) ? (
               <Image
@@ -129,7 +129,7 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
                 {getCategoryIcon(place.category || '')}
               </div>
             )}
-            {/* 유튜버명 오버레이 */}
+            {/* youtuber name overlay */}
             {firstCp?.contents?.creator_name && (
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent pt-4 pb-0.5 px-1">
                 <span className="text-[7px] font-bold text-white truncate block leading-tight">
@@ -139,10 +139,10 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
             )}
           </div>
 
-          {/* Content */}
+          {/* content */}
           <div className="flex-1 min-w-0 space-y-1">
 
-            {/* Badge row — 모바일에서도 안 짤리게 overflow-x-auto */}
+            {/* Badge row */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 -mx-0.5 px-0.5 no-scrollbar">
               <span className="shrink-0 text-[9px] font-black uppercase tracking-widest px-1 py-0.5 rounded" style={{ color: getCategoryColor(place.category || ''), backgroundColor: getCategoryColor(place.category || '') + '15' }}>
                 {getCategoryLabel(place.category || '')}
@@ -161,7 +161,7 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
               )}
             </div>
 
-            {/* Title + creator badge */}
+            {/* title */}
             <div className="flex items-center gap-1.5">
               <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-tight truncate">
                 {displayTitle}
@@ -173,7 +173,7 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
               )}
             </div>
 
-            {/* 한 줄 요약 태그 */}
+            {/* summary tags */}
             {oneLiner && (
               <div className="bg-emerald-50/70 dark:bg-emerald-900/10 rounded-lg px-2 py-1">
                 <p className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 leading-snug line-clamp-1">
@@ -182,13 +182,13 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
               </div>
             )}
 
-            {/* Address + map links */}
+            {/* address + map links */}
             <p className="text-[10px] text-slate-400 flex items-center gap-1 truncate">
               <MapPin className="w-2.5 h-2.5 shrink-0" />
               <span className="truncate">{place.address || '주소 정보 없음'}</span>
             </p>
 
-            {/* Menu */}
+            {/* menu */}
             {place.representative_menu && (
               <p className="text-[10px] text-slate-500 flex items-start gap-1 line-clamp-1">
                 <ShoppingBag className="w-2.5 h-2.5 shrink-0 mt-0.5" />
@@ -196,7 +196,7 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
               </p>
             )}
 
-            {/* Bottom row: 유튜브 바로가기 + 네이버/카카오 */}
+            {/* bottom row */}
             {place.content_places && place.content_places.length > 0 && (
               <div className="flex items-center gap-2 pt-0.5">
                 {ytUrl && (

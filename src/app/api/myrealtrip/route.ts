@@ -41,8 +41,11 @@ export async function GET(req: Request) {
     });
 
     if (!res.ok) {
-      const errText = await res.text();
-      console.warn(`[MyRealTrip] API error (${res.status}): ${errText.substring(0, 200)}`);
+      // 404는 별도 로그 없이 조용히 처리
+      if (res.status !== 404) {
+        const errText = await res.text();
+        console.warn(`[MyRealTrip] API error (${res.status}): ${errText.substring(0, 200)}`);
+      }
       return NextResponse.json({ places: [] });
     }
 
