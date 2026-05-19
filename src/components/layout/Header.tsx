@@ -8,6 +8,7 @@ import { useAppStore } from '@/lib/store';
 import { Search, X } from 'lucide-react';
 import { CATEGORIES, getCategoryIcon } from '@/lib/categories';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 
 import UserMenu from './UserMenu';
 
@@ -17,6 +18,10 @@ export default function Header() {
   const { searchQuery, setSearchQuery, selectedCategory, setSelectedCategory } = useAppStore();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const pathname = usePathname();
+  
+  // 상세페이지(place/[id])에서는 헤더 숨김
+  if (pathname?.startsWith('/place/')) return null;
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

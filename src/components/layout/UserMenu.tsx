@@ -4,13 +4,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu, X, LogIn, LogOut, PlusCircle, User, MessageCircle, 
-  Search, ChevronRight, Settings
+  ChevronRight
 } from 'lucide-react';
 
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
-import { CATEGORIES, getCategoryIcon } from '@/lib/categories';
 
 export default function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -93,55 +92,8 @@ export default function UserMenu() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.96 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute right-0 mt-2 w-[280px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden"
+            className="absolute right-0 mt-2 w-[280px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] overflow-hidden z-[120]"
           >
-            {/* Search */}
-            <div className="px-3 pt-3 pb-2">
-              <form onSubmit={handleSearch} className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchVal}
-                  onChange={(e) => setSearchVal(e.target.value)}
-                  placeholder="검색..."
-                  className="w-full pl-9 pr-3 py-2 bg-slate-100/70 dark:bg-slate-800/70 border-none rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-600 transition-all"
-                />
-              </form>
-            </div>
-
-            {/* Categories */}
-            <div className="px-3 pb-1">
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => handleCategorySelect('all')}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
-                    selectedCategory === 'all'
-                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
-                      : 'bg-slate-100/70 dark:bg-slate-800/70 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                  }`}
-                >
-                  전체
-                </button>
-                {CATEGORIES.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => handleCategorySelect(c.id)}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
-                      selectedCategory === c.id
-                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
-                        : 'bg-slate-100/70 dark:bg-slate-800/70 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    {getCategoryIcon(c.id)} {c.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="mx-3 my-2 border-t border-slate-100 dark:border-slate-800" />
-
-            {/* User Info */}
             {user && (
               <div className="px-4 pb-1">
                 <div className="flex items-center gap-3 py-2">
