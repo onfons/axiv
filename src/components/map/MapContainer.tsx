@@ -223,7 +223,7 @@ function MapContainerImpl({ places, onBoundsChange }: MapProps) {
       {/* Map Container */}
       <div ref={mapContainerRef} className="h-full w-full" />
 
-      {/* Selected Place Info Window - centered over map */}
+      {/* Selected Place Info Window */}
       {selectedPlace && (
         <>
           {/* Backdrop */}
@@ -232,45 +232,59 @@ function MapContainerImpl({ places, onBoundsChange }: MapProps) {
             onClick={() => setSelectedPlace(null)}
           />
 
-          {/* Card */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-[320px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200">
-            {/* Close button */}
-            <button
-              onClick={() => setSelectedPlace(null)}
-              className="absolute top-2 right-2 z-10 w-7 h-7 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
-            >
-              <X className="w-3.5 h-3.5 text-white" />
-            </button>
-
-            {/* YouTube Thumbnail */}
+          {/* Card - positioned at bottom-center over the pin area */}
+          <div className="absolute bottom-[calc(50%+20px)] left-1/2 -translate-x-1/2 z-[9999] w-[340px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200">
+            {/* YouTube Thumbnail - full width, prominent */}
             {selectedPlace.youtube_video_id ? (
               <a
                 href={`https://www.youtube.com/watch?v=${selectedPlace.youtube_video_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative block w-full h-36 bg-black cursor-pointer group"
+                className="relative block w-full aspect-video bg-gray-900 cursor-pointer group"
               >
                 <img
-                  src={`https://img.youtube.com/vi/${selectedPlace.youtube_video_id}/hqdefault.jpg`}
+                  src={`https://img.youtube.com/vi/${selectedPlace.youtube_video_id}/maxresdefault.jpg`}
                   alt={selectedPlace.place_name}
                   className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    if (!img.dataset.fallback) {
+                      img.dataset.fallback = '1';
+                      img.src = `https://img.youtube.com/vi/${selectedPlace.youtube_video_id}/hqdefault.jpg`;
+                    }
+                  }}
                 />
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                  <div className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                    <Play className="w-4 h-4 text-red-500 ml-0.5" />
+                <div className="absolute inset-0 bg-black/25 group-hover:bg-black/35 transition-colors flex items-center justify-center">
+                  <div className="w-14 h-14 bg-white/95 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                    <Play className="w-6 h-6 text-red-500 ml-1" />
                   </div>
                 </div>
+                {/* Close button on thumbnail */}
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedPlace(null); }}
+                  className="absolute top-2 right-2 w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
               </a>
             ) : (
-              <div className="w-full h-1.5 bg-gradient-to-r from-emerald-400 to-emerald-600" />
+              <>
+                <div className="w-full h-2 bg-gradient-to-r from-emerald-400 to-emerald-600" />
+                {/* Close button when no thumbnail */}
+                <button
+                  onClick={() => setSelectedPlace(null)}
+                  className="absolute top-2 right-2 w-8 h-8 bg-gray-200/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                >
+                  <X className="w-4 h-4 text-gray-600" />
+                </button>
+              </>
             )}
 
-            {/* Content */}
-            <div className="p-3.5">
-              {/* Category badge */}
+            {/* Info Section */}
+            <div className="p-4">
+              {/* Category + badges */}
               <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{
                   backgroundColor: `${getCategoryColor(selectedPlace.category)}20`,
                   color: getCategoryColor(selectedPlace.category)
                 }}>
@@ -284,37 +298,45 @@ function MapContainerImpl({ places, onBoundsChange }: MapProps) {
                 )}
               </div>
 
-              {/* Name + Address */}
-              <h3 className="text-[15px] font-bold text-gray-900 leading-tight mb-1">{selectedPlace.place_name}</h3>
+              {/* Name */}
+              <h3 className="text-base font-bold text-gray-900 leading-tight mb-1">{selectedPlace.place_name}</h3>
+
+              {/* Address */}
               <div className="flex items-start gap-1 mb-2 text-xs text-gray-500">
                 <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 text-gray-400" />
-                <span className="leading-snug line-clamp-1">{selectedPlace.address}</span>
+                <span className="leading-snug">{selectedPlace.address}</span>
               </div>
 
-              {/* Quick info row */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3 text-xs text-gray-600">
+              {/* Info items */}
+              <div className="space-y-1.5 mb-3">
                 {selectedPlace.representative_menu && (
-                  <span className="font-medium text-gray-800 truncate max-w-[200px]">{selectedPlace.representative_menu}</span>
-                )}
-                {selectedPlace.phone && (
-                  <span className="flex items-center gap-1">
-                    <Phone className="w-2.5 h-2.5 text-gray-400" />
-                    {selectedPlace.phone}
-                  </span>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-400 text-xs w-10 flex-shrink-0">메뉴</span>
+                    <span className="text-gray-800 font-medium">{selectedPlace.representative_menu}</span>
+                  </div>
                 )}
                 {selectedPlace.business_hours && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-2.5 h-2.5 text-gray-400" />
-                    {selectedPlace.business_hours}
-                  </span>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="text-gray-600">{selectedPlace.business_hours}</span>
+                  </div>
                 )}
                 {selectedPlace.break_time && (
-                  <span className="text-orange-500 font-medium text-[11px]">BT: {selectedPlace.break_time}</span>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-3.5 flex-shrink-0" />
+                    <span className="text-orange-500 text-xs font-medium">브레이크타임 {selectedPlace.break_time}</span>
+                  </div>
+                )}
+                {selectedPlace.phone && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="text-gray-600">{selectedPlace.phone}</span>
+                  </div>
                 )}
               </div>
 
-              {/* Action buttons */}
-              <div className="flex items-center gap-2">
+              {/* Primary buttons: favorite + detail */}
+              <div className="flex items-center gap-2 mb-2">
                 <button
                   onClick={async () => {
                     if (!currentUser) {
@@ -347,34 +369,39 @@ function MapContainerImpl({ places, onBoundsChange }: MapProps) {
                       setFavoriteLoading(false);
                     }
                   }}
-                  className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                  className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
                     isFavorite
                       ? 'bg-red-50 text-red-500 hover:bg-red-100'
                       : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-red-400'
                   }`}
                 >
-                  <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+                  <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
                 </button>
 
                 <button
                   onClick={() => router.push(`/place/${selectedPlace.id}`)}
-                  className="flex-1 h-9 rounded-lg font-semibold text-white text-xs transition-opacity hover:opacity-90"
+                  className="flex-1 h-10 rounded-xl font-semibold text-white text-sm transition-opacity hover:opacity-90"
                   style={{ backgroundColor: getCategoryColor(selectedPlace.category) }}
                 >
                   상세보기
                 </button>
+              </div>
 
+              {/* Secondary buttons: map links */}
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => window.open(`https://map.naver.com/p/search/${encodeURIComponent(selectedPlace.place_name)}`, '_blank')}
-                  className="flex-shrink-0 h-9 px-2.5 rounded-lg bg-[#03C75A] text-white text-[11px] font-semibold hover:opacity-90 transition-opacity"
+                  className="flex-1 h-10 rounded-xl bg-[#03C75A] text-white text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5"
                 >
-                  N
+                  <span className="text-base font-bold">N</span>
+                  <span>네이버 지도</span>
                 </button>
                 <button
                   onClick={() => window.open(`https://map.kakao.com/link/search/${encodeURIComponent(selectedPlace.place_name)}`, '_blank')}
-                  className="flex-shrink-0 h-9 px-2.5 rounded-lg bg-[#FEE500] text-[#191919] text-[11px] font-semibold hover:opacity-90 transition-opacity"
+                  className="flex-1 h-10 rounded-xl bg-[#FEE500] text-[#191919] text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5"
                 >
-                  K
+                  <span className="text-base font-bold">K</span>
+                  <span>카카오맵</span>
                 </button>
               </div>
             </div>

@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Phone, ShoppingBag, Clock, Play, ChevronLeft, Heart, ExternalLink, UtensilsCrossed, ShoppingCart, Hotel, Tent } from 'lucide-react';
+import { Phone, ShoppingBag, Clock, Play, ChevronLeft, Heart, ExternalLink, UtensilsCrossed, ShoppingCart, Hotel, Tent, MapPin } from 'lucide-react';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { useAppStore } from '@/lib/store';
 
@@ -540,6 +540,9 @@ export default function PlaceDetailPage() {
                 </div>
 
                 <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center shrink-0">
+                    <MapPin className="w-5 h-5 text-emerald-500" />
+                  </div>
                   <div className="flex-1">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Address</p>
                     {isEditing ? (
