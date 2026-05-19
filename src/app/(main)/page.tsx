@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import MapContainer from '@/components/map/MapContainer';
+import dynamic from 'next/dynamic';
 import PlaceCard from '@/components/place/PlaceCard';
 import { supabase } from '@/lib/supabaseClient';
 import { useAppStore } from '@/lib/store';
 import { List, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+
+const MapContainer = dynamic(() => import('@/components/map/MapContainer'), { ssr: false });
 
 export default function MainPage() {
   const [places, setPlaces] = useState<any[]>([]);
@@ -133,7 +135,7 @@ export default function MainPage() {
                 animate={{ x: 0 }}
                 exit={{ x: -420 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="absolute md:relative bottom-0 left-6 right-0 md:right-auto w-[calc(100%-24px)] md:w-[400px] h-[50vh] md:h-10 bg-white dark:bg-slate-950 z-[80] shadow-2xl md:shadow-none border-r border-slate-100 dark:border-slate-900 flex flex-col md:rounded-2xl md:top-1/2 md:-translate-y-1/2"
+                className="absolute md:relative bottom-0 left-6 right-0 md:right-auto w-[calc(100%-24px)] md:w-full h-[50vh] md:h-[calc(100vh-60px-48px)] bg-white dark:bg-slate-950 z-[80] shadow-2xl md:shadow-xl border-r border-slate-100 dark:border-slate-900 flex flex-col md:rounded-2xl md:absolute md:top-[60px] md:left-6 md:w-[calc(100%-48px)]"
               >
                 <div className="p-4 pb-2 mt-2">
 

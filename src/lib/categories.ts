@@ -1,7 +1,7 @@
 export const CATEGORIES = [
-  { id: 'food',          label: '맛집',  icon: '🍴', color: '#10B981' },
+  { id: 'food',          label: '맛집',  icon: '🍴', color: '#EF4444' },
   { id: 'cafe',          label: '카페',  icon: '☕', color: '#F59E0B' },
-  { id: 'camping',       label: '캠핑',  icon: '⛺',  color: '#059669' },
+  { id: 'camping',       label: '캠핑',  icon: '⛺',  color: '#10B981' },
   { id: 'fishing',       label: '낚시',  icon: '🎣', color: '#2563EB' },
   { id: 'travel',        label: '여행',  icon: '✈️', color: '#8B5CF6' },
   { id: 'accommodation', label: '숙소',  icon: '🏨', color: '#EC4899' },

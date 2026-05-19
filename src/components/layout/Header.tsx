@@ -115,10 +115,15 @@ export default function Header() {
             <button
               key={c.id}
               onClick={() => handleCategoryClick(c.id)}
+              style={{
+                backgroundColor: selectedCategory === c.id ? c.color : undefined,
+                borderColor: selectedCategory === c.id ? c.color : undefined,
+                color: selectedCategory === c.id ? '#fff' : c.color,
+              }}
               className={`shrink-0 px-3.5 py-1.5 rounded-xl text-[11px] font-bold tracking-tight transition-all ${
                 selectedCategory === c.id
-                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg'
-                  : 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
+                  ? 'shadow-lg'
+                  : 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 hover:brightness-90'
               }`}
             >
               {getCategoryIcon(c.id)} {c.label}
