@@ -82,7 +82,7 @@ Respond ONLY with a valid JSON array containing exactly one object. Example form
 \`\`\`
 
 Rules:
-- category must be one of: food, cafe, camping, fishing, travel, accommodation
+- category must be one of: food, cafe, camping, fishing, travel, accommodation, popup, exhibition, activity, drive
 - If no information is found in search results, try to infer reasonable defaults based on the place name
 - break_time: empty string if none
 - waiting_tip: "없음" if none

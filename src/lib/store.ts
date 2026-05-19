@@ -40,6 +40,13 @@ interface AppState {
   };
   showInputModal: (title: string, message: string, onConfirm: (value: string) => void, defaultValue?: string, placeholder?: string) => void;
   hideInputModal: () => void;
+
+  // Location
+  userLocation: { lat: number; lng: number } | null;
+  setUserLocation: (loc: { lat: number; lng: number } | null) => void;
+
+  mapBounds: { swLat: number; swLng: number; neLat: number; neLng: number } | null;
+  setMapBounds: (bounds: { swLat: number; swLng: number; neLat: number; neLng: number } | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -70,6 +77,13 @@ export const useAppStore = create<AppState>((set) => ({
     inputModal: { title, message, visible: true, defaultValue, placeholder, onConfirm }
   }),
   hideInputModal: () => set((state) => ({ inputModal: { ...state.inputModal, visible: false } })),
+
+  // Location
+  userLocation: null,
+  setUserLocation: (loc) => set({ userLocation: loc }),
+
+  mapBounds: null,
+  setMapBounds: (bounds) => set({ mapBounds: bounds }),
 }));
 
 export type { AppState };

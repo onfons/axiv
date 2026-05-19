@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Phone, MapPin, ShoppingBag, Clock, Play, ChevronLeft, Heart, ExternalLink, UtensilsCrossed, ShoppingCart, Hotel, Tent } from 'lucide-react';
+import { Phone, ShoppingBag, Clock, Play, ChevronLeft, Heart, ExternalLink, UtensilsCrossed, ShoppingCart, Hotel, Tent } from 'lucide-react';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { useAppStore } from '@/lib/store';
 
@@ -418,7 +418,7 @@ export default function PlaceDetailPage() {
             />
           ) : (
             <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-               <span className="text-9xl opacity-20">📍</span>
+               <span className="text-9xl opacity-20">🍽️</span>
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
@@ -454,9 +454,64 @@ export default function PlaceDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Detailed Info Card */}
-          <div className="lg:col-span-1 space-y-6">
+
+          {/* Recommenders Section — moved to top */}
+          <div className="lg:col-span-2 lg:order-1 order-1">
+             <div className="flex items-center gap-4 mb-8">
+               <div className="w-2 h-10 bg-emerald-500 rounded-full" />
+               <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">
+                 Recommenders
+               </h2>
+             </div>
+
+             <div className="space-y-8">
+               {contents.map((item, idx) => (
+                 <div key={idx} className="bg-white dark:bg-slate-900 rounded-[40px] p-6 md:p-8 shadow-xl border border-white dark:border-slate-800 group">
+                   <div className="flex flex-col md:flex-row gap-8">
+                     <div className="w-full md:w-72 aspect-video relative rounded-3xl overflow-hidden shadow-2xl shrink-0">
+                       <Image
+                         src={item.contents.thumbnail_url}
+                         alt={item.contents.title}
+                         fill
+                         className="object-cover group-hover:scale-110 transition-transform duration-700"
+                       />
+                       <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                         <Link
+                           href={`https://youtube.com/watch?v=${item.contents.video_id}&t=${item.timeline_seconds}s`}
+                           target="_blank"
+                           className="w-14 h-14 bg-emerald-500 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform"
+                         >
+                           <Play className="w-6 h-6 text-white fill-white" />
+                         </Link>
+                       </div>
+                       <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/80 backdrop-blur-md rounded-xl text-[10px] font-black text-white border border-white/10">
+                         {Math.floor(item.timeline_seconds / 60)}:{(item.timeline_seconds % 60).toString().padStart(2, '0')}
+                       </div>
+                     </div>
+
+                     <div className="flex-1 flex flex-col justify-center">
+                       <div className="flex items-center gap-3 mb-4">
+                         <div className="px-3 py-1 bg-red-50 dark:bg-red-900/20 rounded-lg text-[10px] font-black text-red-500 uppercase tracking-widest border border-red-100 dark:border-red-800">
+                           {item.contents.creator_name}
+                         </div>
+                       </div>
+                       <h3 className="text-xl font-black text-slate-900 dark:text-white mb-4 tracking-tight leading-snug">
+                         {item.contents.title}
+                       </h3>
+                       <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border-l-4 border-emerald-500">
+                         <p className="text-xs text-slate-600 dark:text-slate-300 italic leading-relaxed font-bold">
+                           "{item.creator_review}"
+                         </p>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+               ))}
+             </div>
+          </div>
+
+          {/* Detailed Info Card — moved to bottom */}
+          <div className="lg:col-span-1 lg:order-2 order-2 space-y-6">
             <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-xl border border-white dark:border-slate-800">
               <h2 className="text-xs font-black text-slate-400 mb-8 uppercase tracking-widest">Business Information</h2>
               
@@ -486,9 +541,6 @@ export default function PlaceDetailPage() {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0">
-                    <MapPin className="w-5 h-5 text-emerald-500" />
-                  </div>
                   <div className="flex-1">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Address</p>
                     {isEditing ? (
@@ -596,61 +648,7 @@ export default function PlaceDetailPage() {
             </div>
           </div>
 
-          {/* Video & Review Content */}
-          <div className="lg:col-span-2">
-             <div className="flex items-center gap-4 mb-8">
-               <div className="w-2 h-10 bg-emerald-500 rounded-full" />
-               <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">
-                 Recommenders
-               </h2>
-             </div>
-
-             <div className="space-y-8">
-               {contents.map((item, idx) => (
-                 <div key={idx} className="bg-white dark:bg-slate-900 rounded-[40px] p-6 md:p-8 shadow-xl border border-white dark:border-slate-800 group">
-                   <div className="flex flex-col md:flex-row gap-8">
-                     <div className="w-full md:w-72 aspect-video relative rounded-3xl overflow-hidden shadow-2xl shrink-0">
-                       <Image
-                         src={item.contents.thumbnail_url}
-                         alt={item.contents.title}
-                         fill
-                         className="object-cover group-hover:scale-110 transition-transform duration-700"
-                       />
-                       <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                         <Link 
-                           href={`https://youtube.com/watch?v=${item.contents.video_id}&t=${item.timeline_seconds}s`}
-                           target="_blank"
-                           className="w-14 h-14 bg-emerald-500 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform"
-                         >
-                           <Play className="w-6 h-6 text-white fill-white" />
-                         </Link>
-                       </div>
-                       <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/80 backdrop-blur-md rounded-xl text-[10px] font-black text-white border border-white/10">
-                         {Math.floor(item.timeline_seconds / 60)}:{(item.timeline_seconds % 60).toString().padStart(2, '0')}
-                       </div>
-                     </div>
-
-                     <div className="flex-1 flex flex-col justify-center">
-                       <div className="flex items-center gap-3 mb-4">
-                         <div className="px-3 py-1 bg-red-50 dark:bg-red-900/20 rounded-lg text-[10px] font-black text-red-500 uppercase tracking-widest border border-red-100 dark:border-red-800">
-                           {item.contents.creator_name}
-                         </div>
-                       </div>
-                       <h3 className="text-xl font-black text-slate-900 dark:text-white mb-4 tracking-tight leading-snug">
-                         {item.contents.title}
-                       </h3>
-                       <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border-l-4 border-emerald-500">
-                         <p className="text-xs text-slate-600 dark:text-slate-300 italic leading-relaxed font-bold">
-                           "{item.creator_review}"
-                         </p>
-                       </div>
-                     </div>
-                   </div>
-                 </div>
-               ))}
-             </div>
-          </div>
-
+          
         </div>
 
         {/* ── Partner Links Section ── */}

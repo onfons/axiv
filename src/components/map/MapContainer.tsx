@@ -21,6 +21,7 @@ const defaultCenter: [number, number] = [37.5665, 126.9780];
 
 interface MapProps {
   places: any[];
+  onBoundsChange?: (bounds: { swLat: number; swLng: number; neLat: number; neLng: number }) => void;
 }
 
 function createMarkerIcon(category: string): L.DivIcon {
@@ -59,7 +60,7 @@ function createUserMarkerIcon(): L.DivIcon {
   });
 }
 
-function MapContainerImpl({ places }: MapProps) {
+function MapContainerImpl({ places, onBoundsChange }: MapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -89,6 +90,21 @@ function MapContainerImpl({ places }: MapProps) {
       }).addTo(map);
 
       mapRef.current = map;
+
+      // Bounds change → notify parent (300ms debounce)
+      let boundsTimer: ReturnType<typeof setTimeout> | null = null;
+      map.on('moveend', () => {
+        if (boundsTimer) clearTimeout(boundsTimer);
+        boundsTimer = setTimeout(() => {
+          const b = map.getBounds();
+          onBoundsChange?.({
+            swLat: b.getSouthWest().lat,
+            swLng: b.getSouthWest().lng,
+            neLat: b.getNorthEast().lat,
+            neLng: b.getNorthEast().lng,
+          });
+        }, 300);
+      });
     }
 
     return () => {
@@ -97,7 +113,7 @@ function MapContainerImpl({ places }: MapProps) {
         mapRef.current = null;
       }
     };
-  }, []);
+  }, [onBoundsChange]);
 
   // User location
   useEffect(() => {
@@ -106,6 +122,7 @@ function MapContainerImpl({ places }: MapProps) {
         (position) => {
           const loc: [number, number] = [position.coords.latitude, position.coords.longitude];
           setUserLocation(loc);
+          useAppStore.getState().setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
         },
         () => console.log('Geolocation failed')
       );

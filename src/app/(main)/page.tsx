@@ -14,8 +14,9 @@ const MapContainer = dynamic(() => import('@/components/map/MapContainer'), { ss
 export default function MainPage() {
   const [places, setPlaces] = useState<any[]>([]);
   const [mrtDataMap, setMrtDataMap] = useState<Record<string, any>>({});
-  const { selectedCategory, searchQuery } = useAppStore();
+  const { selectedCategory, searchQuery, userLocation, setMapBounds } = useAppStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [mapBounds, setLocalMapBounds] = useState<{ swLat: number; swLng: number; neLat: number; neLng: number } | null>(null);
 
   // MyRealTrip 데이터를 병렬로 가져오는 함수
   const fetchMrtData = useCallback(async (placeList: any[]) => {
@@ -56,6 +57,25 @@ export default function MainPage() {
     setMrtDataMap(prev => ({ ...prev, ...results }));
   }, []);
 
+  /** Calculate initial bounds from GPS location (반경 ~10km = 약 0.1도) */
+  const getInitialBounds = useCallback(() => {
+    if (!userLocation) return null;
+    const lat = userLocation.lat;
+    const lng = userLocation.lng;
+    const offset = 0.1; // ~10km
+    return {
+      swLat: lat - offset,
+      swLng: lng - offset,
+      neLat: lat + offset,
+      neLng: lng + offset,
+    };
+  }, [userLocation]);
+
+  const handleBoundsChange = useCallback((bounds: { swLat: number; swLng: number; neLat: number; neLng: number }) => {
+    setLocalMapBounds(bounds);
+    setMapBounds(bounds);
+  }, [setMapBounds]);
+
   useEffect(() => {
     const fetchPlaces = async () => {
       let query = supabase.from('places').select(`
@@ -72,11 +92,21 @@ export default function MainPage() {
           )
         )
       `);
-      
+
+      // Bounds 필터 (우선순위: 지도 bounds > GPS 초기 bounds)
+      const activeBounds = mapBounds || getInitialBounds();
+      if (activeBounds) {
+        query = query
+          .gte('lat', activeBounds.swLat)
+          .lte('lat', activeBounds.neLat)
+          .gte('lng', activeBounds.swLng)
+          .lte('lng', activeBounds.neLng);
+      }
+
       if (selectedCategory !== 'all') {
         query = query.eq('category', selectedCategory);
       }
-      
+
       const { data, error } = await query.order('created_at', { ascending: false }).limit(200);
       
       if (error) {
@@ -117,7 +147,7 @@ export default function MainPage() {
       fetchMrtData(filtered);
     };
     fetchPlaces();
-  }, [selectedCategory, searchQuery, fetchMrtData]);
+  }, [selectedCategory, searchQuery, fetchMrtData, mapBounds, getInitialBounds]);
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950">
@@ -172,8 +202,18 @@ export default function MainPage() {
           </button>
 
           {/* Map */}
-          <div className="flex-1 h-full z-0">
-            <MapContainer places={places} />
+          <div className="flex-1 h-full z-0 relative">
+            <MapContainer places={places} onBoundsChange={handleBoundsChange} />
+
+            {/* "이 지역 유튜브 핫플 보기" 버튼 — 사이드바가 닫혀있고 장소가 있을 때만 */}
+            {!isSidebarOpen && places.length > 0 && (
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[100] px-5 py-2.5 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.2)] border border-emerald-500/30 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+              >
+                이 지역 유튜브 핫플 {places.length}곳 보기
+              </button>
+            )}
           </div>
 
         </div>
