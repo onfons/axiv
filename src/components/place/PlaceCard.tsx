@@ -47,6 +47,17 @@ type Place = {
   parking_info?: string;
   lat?: number;
   lng?: number;
+  content_places?: Array<{
+    timeline_seconds?: number;
+    creator_review?: string;
+    summary?: string;
+    contents?: {
+      video_id?: string;
+      title?: string;
+      creator_name?: string;
+      thumbnail_url?: string;
+    };
+  }>;
 };
 
 const defaultThumb = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&q=80';
@@ -56,6 +67,15 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
   const hasMrt = mrtData && (mrtData.rating || mrtData.price || mrtData.description);
   const hasWaiting = isValidInfo(place.waiting_tip);
   const hasParking = isValidInfo(place.parking_info);
+  
+  // 유튜버 정보 추출
+  const creators = place.content_places
+    ?.map(cp => cp.contents?.creator_name)
+    .filter(Boolean) as string[] || [];
+  const uniqueCreators = [...new Set(creators)];
+  const creatorBadge = uniqueCreators.length > 0 
+    ? uniqueCreators.slice(0, 2).join(', ') + (uniqueCreators.length > 2 ? ` 외 ${uniqueCreators.length - 2}명` : '')
+    : null;
 
   return (
     <motion.div
@@ -90,6 +110,11 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
               <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">
                 {getCategoryLabel(place.category || '')}
               </span>
+              {creatorBadge && (
+                <span className="text-[8px] font-bold text-purple-500 bg-purple-50 dark:bg-purple-900/20 px-1.5 py-0.5 rounded-md truncate max-w-[160px]">
+                  {creatorBadge}
+                </span>
+              )}
               {hasMrt && mrtData?.rating && (
                 <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">
                   <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
@@ -104,7 +129,27 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
 
             <p className="text-[11px] text-slate-400 flex items-center gap-1 truncate">
               <MapPin className="w-3 h-3 shrink-0" />
-              {place.address || '주소 정보 없음'}
+              <span className="truncate">{place.address || '주소 정보 없음'}</span>
+              {place.place_name && (
+                <span className="flex gap-0.5 shrink-0 ml-auto" onClick={e => e.stopPropagation()}>
+                  <a
+                    href={`https://map.naver.com/v5/search/${encodeURIComponent(place.place_name + ' ' + (place.address || ''))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-1.5 py-0.5 rounded text-[9px] font-bold text-green-600 bg-green-50 hover:bg-green-100 transition-colors"
+                  >
+                    네이버지도
+                  </a>
+                  <a
+                    href={`https://map.kakao.com/link/search/${encodeURIComponent(place.place_name + ' ' + (place.address || ''))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-1.5 py-0.5 rounded text-[9px] font-bold text-yellow-600 bg-yellow-50 hover:bg-yellow-100 transition-colors"
+                  >
+                    카카오맵
+                  </a>
+                </span>
+              )}
             </p>
 
             {/* Business hours */}

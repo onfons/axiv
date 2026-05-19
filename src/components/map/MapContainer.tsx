@@ -4,8 +4,8 @@ import { GoogleMap, LoadScriptNext, Marker, Circle, OverlayView } from '@react-g
 
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Play, Phone, Clock, X, Navigation, Heart } from 'lucide-react';
-import { getCategoryColor } from '@/lib/categories';
+import { Play, Phone, Clock, X, Navigation, Heart, MapPin } from 'lucide-react';
+import { getCategoryColor, getCategoryIcon } from '@/lib/categories';
 import { supabase } from '@/lib/supabaseClient';
 import { useAppStore } from '@/lib/store';
 
@@ -54,21 +54,34 @@ interface MapProps {
 
 function getMarkerIcon(category: string): google.maps.Icon {
   const color = getCategoryColor(category) || '#10B981';
-  const symbols: Record<string, string> = {
-    food: '<circle cx="12" cy="9" r="3.5" fill="white"/><path d="M10 7l4 4M14 7l-4 4" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>',
-    cafe: '<path d="M8 10h8M9.5 8h5M10.5 6h3" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>',
-    camping: '<path d="M8 11l4-4 4 4M9.5 11v3.5h5V11" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
-    fishing: '<circle cx="12" cy="8" r="2.5" fill="white"/><path d="M8 12c1.5 0 3-1 4-2" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>',
-    travel: '<path d="M12 7l2 3 3 .5-2.5 2.5.8 3L12 14l-3.3 2 .8-3L7 10.5l3-.5z" fill="white"/>',
-    accommodation: '<rect x="9" y="11" width="6" height="5" rx="0.8" fill="white"/><path d="M9 8h6v3H9zm1-3h4v2h-4z" fill="white"/>',
-  };
-  const inner = symbols[category] || '';
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 28" width="48" height="56">' +
-    '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="' + color + '" stroke="white" stroke-width="2"/>' +
-    inner +
-    '</svg>';
+  const emoji = getCategoryIcon(category);
+  // Draw emoji on a canvas and return as data URL
+  const canvas = document.createElement('canvas');
+  canvas.width = 48;
+  canvas.height = 56;
+  const ctx = canvas.getContext('2d')!;
+  // Pin shape
+  ctx.beginPath();
+  ctx.moveTo(24, 54);
+  ctx.bezierCurveTo(10, 40, 4, 30, 4, 18);
+  ctx.bezierCurveTo(4, 7, 13, 2, 24, 2);
+  ctx.bezierCurveTo(35, 2, 44, 7, 44, 18);
+  ctx.bezierCurveTo(44, 30, 38, 40, 24, 54);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Emoji in center
+  ctx.font = '22px "Apple Color Emoji", "Segoe UI Emoji", Noto Color Emoji, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(emoji, 24, 19);
+
   return {
-    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    url: canvas.toDataURL(),
     scaledSize: new google.maps.Size(36, 42),
     anchor: new google.maps.Point(18, 42),
   };
@@ -327,7 +340,6 @@ function MapContainerImpl({ places }: MapProps) {
                     <button
                       onClick={() => {
                         setSelectedPlace(null);
-                        // 약간의 지연 후 페이지 이동 (Google Maps 정리 시간 확보)
                         setTimeout(() => router.push(`/place/${selectedPlace.id}`), 50);
                       }}
                       className="flex-[2] py-2.5 bg-emerald-500 text-white text-[11px] font-black rounded-xl hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
@@ -335,6 +347,30 @@ function MapContainerImpl({ places }: MapProps) {
                       상세보기
                     </button>
                     </div>
+
+                    {/* Map links */}
+                    {selectedPlace?.place_name && (
+                      <div className="flex gap-2 mt-2">
+                        <a
+                          href={`https://map.naver.com/v5/search/${encodeURIComponent(selectedPlace.place_name + ' ' + (selectedPlace.address || ''))}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-2 rounded-xl text-[10px] font-bold bg-green-50 text-green-700 hover:bg-green-100 transition-all active:scale-95 flex items-center justify-center gap-1.5 border border-green-200"
+                        >
+                          <MapPin className="w-3 h-3" />
+                          네이버 지도
+                        </a>
+                        <a
+                          href={`https://map.kakao.com/link/search/${encodeURIComponent(selectedPlace.place_name + ' ' + (selectedPlace.address || ''))}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-2 rounded-xl text-[10px] font-bold bg-yellow-50 text-yellow-700 hover:bg-yellow-100 transition-all active:scale-95 flex items-center justify-center gap-1.5 border border-yellow-200"
+                        >
+                          <MapPin className="w-3 h-3" />
+                          카카오맵
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

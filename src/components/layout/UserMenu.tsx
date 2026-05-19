@@ -59,10 +59,12 @@ export default function UserMenu() {
     setIsOpen(false);
   };
 
+  const isAdmin = user?.email === 'onfons.it@gmail.com';
+
   const menuSections = [
     ...(user ? [
       { label: '내 활동', items: [
-        { icon: PlusCircle, text: '장소 등록', action: () => { router.push('/register'); setIsOpen(false); } },
+        ...(isAdmin ? [{ icon: PlusCircle, text: '장소 등록', action: () => { router.push('/register'); setIsOpen(false); } }] : []),
         { icon: User, text: '마이페이지', action: () => { router.push('/mypage'); setIsOpen(false); } },
       ]},
     ] : []),

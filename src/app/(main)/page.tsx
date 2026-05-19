@@ -91,8 +91,24 @@ export default function MainPage() {
           const matchesCreator = place.content_places?.some((cp: any) => 
             cp.contents?.creator_name?.toLowerCase().includes(lowerQuery)
           );
-          return matchesName || matchesAddress || matchesCreator;
+          // 썸네일 설명에서도 검색
+          const matchesDescription = place.place_description?.toLowerCase().includes(lowerQuery);
+          const matchesMenu = place.representative_menu?.toLowerCase().includes(lowerQuery);
+          return matchesName || matchesAddress || matchesCreator || matchesDescription || matchesMenu;
         });
+
+        // 유튜버 검색 시 관련 장소가 상단에 오도록 정렬 (creator match 우선)
+        if (filtered.length > 1) {
+          filtered.sort((a: any, b: any) => {
+            const aCreator = a.content_places?.some((cp: any) =>
+              cp.contents?.creator_name?.toLowerCase().includes(lowerQuery)
+            ) ? 1 : 0;
+            const bCreator = b.content_places?.some((cp: any) =>
+              cp.contents?.creator_name?.toLowerCase().includes(lowerQuery)
+            ) ? 1 : 0;
+            return bCreator - aCreator;
+          });
+        }
       }
 
       setPlaces(filtered);
@@ -121,13 +137,7 @@ export default function MainPage() {
               >
                 <div className="p-4 pb-2 mt-2">
 
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex flex-col">
-                      <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tighter leading-none">Discover</h2>
-                      <p className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">
-                        {places.length} Places
-                      </p>
-                    </div>
+                  <div className="flex items-center justify-end mb-2">
                     <button 
                       onClick={() => setIsSidebarOpen(false)}
                       className="w-8 h-8 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 flex items-center justify-center transition-colors group"
@@ -153,13 +163,13 @@ export default function MainPage() {
             )}
           </AnimatePresence>
 
-          {/* Toggle Trigger */}
+          {/* Toggle Trigger — 좌측 가운데 */}
           {!isSidebarOpen && (
             <motion.button 
               initial={{ scale: 0, x: -10 }}
               animate={{ scale: 1, x: 0 }}
               onClick={() => setIsSidebarOpen(true)}
-              className="absolute left-6 bottom-6 z-[85] w-10 h-10 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
+              className="absolute left-6 top-1/2 -translate-y-1/2 z-[85] w-10 h-10 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
             >
               <ChevronRight className="w-5 h-5 text-slate-900 dark:text-white" />
             </motion.button>

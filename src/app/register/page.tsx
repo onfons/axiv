@@ -37,6 +37,13 @@ export default function RegisterPage() {
         showConfirm('로그인 필요', '로그인이 필요한 서비스입니다. 로그인 페이지로 이동합니다.', () => {
           router.push('/login');
         });
+      } else if (session.user.email !== 'onfons.it@gmail.com') {
+        setIsForbidden(true);
+        setIsAuthChecking(false);
+        const { showConfirm } = useAppStore.getState();
+        showConfirm('접근 권한 없음', '관리자만 이용할 수 있는 페이지입니다.', () => {
+          router.push('/');
+        });
       } else {
         setUserDisplayName(session.user.email?.split('@')[0] || session.user.email || '사용자');
         setIsAuthChecking(false);
@@ -47,6 +54,7 @@ export default function RegisterPage() {
   const [successItems, setSuccessItems] = useState<string[]>([]);
   const [coupangProducts, setCoupangProducts] = useState<any[]>([]);
   const [savingIndex, setSavingIndex] = useState<number | null>(null);
+  const [isForbidden, setIsForbidden] = useState(false);
 
   const fetchCoupangByPlace = (places: any[]) => {
     if (!places?.length) return;
@@ -453,6 +461,15 @@ const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임�
       <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
         <p className="text-sm font-bold text-slate-400">인증 정보를 확인하고 있습니다...</p>
+      </div>
+    );
+  }
+
+  if (isForbidden) {
+    return (
+      <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+        <p className="text-sm font-bold text-slate-400">권한을 확인 중...</p>
       </div>
     );
   }
