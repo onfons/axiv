@@ -407,7 +407,7 @@ export default function PlaceDetailPage() {
       <div className="max-w-5xl mx-auto px-4 pb-32">
         
         {/* Immersive Hero Card */}
-        <div className="relative h-[30vh] md:h-[40vh] rounded-[40px] overflow-hidden mb-8 shadow-2xl border-4 border-white dark:border-slate-900">
+        <div className="relative h-[18vh] md:h-[24vh] rounded-[32px] overflow-hidden mb-6 shadow-xl border-4 border-white dark:border-slate-900">
           {place.thumbnail_url ? (
             <Image
               src={place.thumbnail_url}
@@ -422,7 +422,7 @@ export default function PlaceDetailPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
           
           <div className="absolute bottom-6 left-8 right-8">
-            <div className="flex flex-col items-start gap-2">
+            <div className="flex flex-col items-start gap-1">
               <div className="px-3 py-1 bg-emerald-500 text-white rounded-xl text-[10px] font-black tracking-widest uppercase">
                 {isEditing ? (
                    <select 
@@ -443,7 +443,7 @@ export default function PlaceDetailPage() {
                   className="bg-white/20 backdrop-blur-md text-3xl md:text-5xl font-black text-white outline-none border-b-2 border-white/40 w-full"
                 />
               ) : (
-                <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter">
+                <h1 className="text-2xl md:text-4xl font-black text-white tracking-tighter">
                   {place.place_name}
                 </h1>
               )}
