@@ -135,7 +135,7 @@ export default function MainPage() {
                 animate={{ x: 0 }}
                 exit={{ x: -420 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="absolute md:relative bottom-0 left-6 right-0 md:right-auto w-[calc(100%-24px)] md:w-full h-[50vh] md:h-[calc(100vh-60px-48px)] bg-white dark:bg-slate-950 z-[80] shadow-2xl md:shadow-xl border-r border-slate-100 dark:border-slate-900 flex flex-col md:rounded-2xl md:absolute md:top-[60px] md:left-6 md:w-[calc(100%-48px)]"
+                className="absolute md:relative bottom-0 left-6 right-0 md:right-auto w-[calc(100%-24px)] md:w-full h-[50vh] md:h-[calc(100vh-60px-48px)] bg-white dark:bg-slate-950 z-[80] shadow-2xl md:shadow-xl border-r border-slate-100 dark:border-slate-900 flex flex-col md:rounded-2xl md:absolute md:top-[calc(50%+32px)] md:left-6 md:w-[calc(100%-48px)]"
               >
                 <div className="p-4 pb-2 mt-2">
 

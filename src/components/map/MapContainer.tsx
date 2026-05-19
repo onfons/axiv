@@ -371,13 +371,13 @@ function MapContainerImpl({ places }: MapProps) {
         </div>
       )}
 
-      {/* Floating Controls */}
-      <div className="absolute bottom-24 right-6 z-20 flex flex-col gap-3">
+      {/* Floating Controls — 내 위치 버튼 */}
+      <div className="absolute bottom-8 right-6 z-50">
         <button
           onClick={handleCenterUser}
-          className="w-12 h-12 bg-white rounded-2xl shadow-2xl border border-slate-100 flex items-center justify-center group hover:bg-emerald-500 transition-all active:scale-90"
+          className="w-14 h-14 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] border-2 border-emerald-500 flex items-center justify-center hover:bg-emerald-500 hover:scale-110 active:scale-95 transition-all duration-200 group"
         >
-          <Navigation className="w-5 h-5 text-slate-600 group-hover:text-white" />
+          <Navigation className="w-6 h-6 text-emerald-500 group-hover:text-white transition-colors" />
         </button>
       </div>
     </div>
