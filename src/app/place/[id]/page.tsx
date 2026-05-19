@@ -50,6 +50,10 @@ const COUPANG_KEYWORDS: Record<string, string> = {
   fishing: '낚시 용품 레저',
   travel: '여행 캐리어 가방',
   accommodation: '호텔 숙박 여행',
+  popup: '팝업 스토어 굿즈',
+  exhibition: '전시회 미술 전시',
+  activity: '액티비티 스포츠 레저',
+  drive: '드라이브 차량 용품',
 };
 
 function CoupangProductCard({ product }: { product: any }) {
