@@ -68,7 +68,7 @@ export default function UserMenu() {
       ]},
     ] : []),
     { label: '고객 지원', items: [
-      { icon: MessageCircle, text: '제보 및 문의', action: () => { router.push('/contact'); setIsOpen(false); } },
+      { icon: MessageCircle, text: '문의 및 제보', action: () => { router.push('/contact'); setIsOpen(false); } },
     ]},
   ];
 

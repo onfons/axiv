@@ -19,9 +19,7 @@ export default function Header() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
-  
-  // 상세페이지(place/[id])에서는 헤더 숨김
-  if (pathname?.startsWith('/place/')) return null;
+  const isHidden = pathname?.startsWith('/place/');
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -53,7 +51,7 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[110] pointer-events-none">
+    <header className={`fixed top-0 left-0 right-0 z-[110] pointer-events-none ${isHidden ? 'hidden' : ''}`}>
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-3 sm:pt-4 space-y-2 pointer-events-auto">
         
         {/* Row 1: Logo + Search + UserMenu */}

@@ -10,7 +10,7 @@ export default function ContactPage() {
   const router = useRouter();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState({
-    type: 'report',
+    type: 'inquiry',
     subject: '',
     content: '',
     contact: ''
@@ -70,7 +70,7 @@ export default function ContactPage() {
                   <MessageCircle className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">제보 및 문의</h1>
+                  <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">문의 및 제보</h1>
                   <p className="text-slate-400 font-bold text-sm">잘못된 정보 정정이나 새로운 장소 제보를 환영합니다.</p>
                 </div>
               </div>
@@ -81,17 +81,17 @@ export default function ContactPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
-                      onClick={() => setFormData({...formData, type: 'report'})}
-                      className={`py-4 rounded-2xl text-xs font-black transition-all border ${formData.type === 'report' ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-transparent hover:border-slate-200 dark:hover:border-slate-700'}`}
-                    >
-                      정보 정정 / 제보
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => setFormData({...formData, type: 'inquiry'})}
                       className={`py-4 rounded-2xl text-xs font-black transition-all border ${formData.type === 'inquiry' ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-transparent hover:border-slate-200 dark:hover:border-slate-700'}`}
                     >
                       기타 일반 문의
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, type: 'report'})}
+                      className={`py-4 rounded-2xl text-xs font-black transition-all border ${formData.type === 'report' ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-transparent hover:border-slate-200 dark:hover:border-slate-700'}`}
+                    >
+                      정보 정정 / 제보
                     </button>
                   </div>
                 </div>

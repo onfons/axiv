@@ -133,18 +133,12 @@ export default function MainPage() {
                 animate={{ x: 0 }}
                 exit={{ x: -420 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="absolute md:relative bottom-0 left-0 right-0 md:right-auto w-full md:w-[400px] h-[50vh] md:h-full bg-white dark:bg-slate-950 z-[80] shadow-2xl md:shadow-none border-r border-slate-100 dark:border-slate-900 flex flex-col"
+                className="absolute md:relative bottom-0 left-6 right-0 md:right-auto w-[calc(100%-24px)] md:w-[400px] h-[50vh] md:h-10 bg-white dark:bg-slate-950 z-[80] shadow-2xl md:shadow-none border-r border-slate-100 dark:border-slate-900 flex flex-col md:rounded-2xl md:top-1/2 md:-translate-y-1/2"
               >
                 <div className="p-4 pb-2 mt-2">
 
-                  <div className="flex items-center justify-end mb-2">
-                    <button 
-                      onClick={() => setIsSidebarOpen(false)}
-                      className="w-8 h-8 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 flex items-center justify-center transition-colors group"
-                    >
-                      <ChevronLeft className="w-4 h-4 text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white" />
-                    </button>
-                  </div>
+                  {/* Close button removed — moved outside sidebar */}
+
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-4 pb-20 custom-scrollbar space-y-3">
@@ -163,17 +157,17 @@ export default function MainPage() {
             )}
           </AnimatePresence>
 
-          {/* Toggle Trigger — 좌측 가운데 */}
-          {!isSidebarOpen && (
-            <motion.button 
-              initial={{ scale: 0, x: -10 }}
-              animate={{ scale: 1, x: 0 }}
-              onClick={() => setIsSidebarOpen(true)}
-              className="absolute left-6 top-1/2 -translate-y-1/2 z-[85] w-10 h-10 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
-            >
+          {/* Toggle Button — 좌측 가운데 (동일 위치) */}
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="absolute left-6 top-1/2 -translate-y-1/2 z-[90] w-10 h-10 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
+          >
+            {isSidebarOpen ? (
+              <ChevronLeft className="w-5 h-5 text-slate-900 dark:text-white" />
+            ) : (
               <ChevronRight className="w-5 h-5 text-slate-900 dark:text-white" />
-            </motion.button>
-          )}
+            )}
+          </button>
 
           {/* Map */}
           <div className="flex-1 h-full z-0">

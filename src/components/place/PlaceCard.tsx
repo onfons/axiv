@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MapPin, Star, Phone, Clock, ShoppingBag } from 'lucide-react';
-import { getCategoryIcon, getCategoryLabel } from '@/lib/categories';
+import { getCategoryIcon, getCategoryLabel, getCategoryColor } from '@/lib/categories';
 
 /** 실제 의미 있는 웨이팅/주차 정보인지 확인 */
 function isValidInfo(val: string | undefined | null): boolean {
@@ -107,7 +107,7 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
           <div className="flex-1 min-w-0 space-y-1.5">
             {/* Title row */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+              <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: getCategoryColor(place.category || '') }}>
                 {getCategoryLabel(place.category || '')}
               </span>
               {creatorBadge && (
@@ -131,23 +131,19 @@ export default function PlaceCard({ place, mrtData }: { place: Place; mrtData?: 
               <MapPin className="w-3 h-3 shrink-0" />
               <span className="truncate">{place.address || '주소 정보 없음'}</span>
               {place.place_name && (
-                <span className="flex gap-0.5 shrink-0 ml-auto" onClick={e => e.stopPropagation()}>
-                  <a
-                    href={`https://map.naver.com/v5/search/${encodeURIComponent(place.place_name + ' ' + (place.address || ''))}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-1.5 py-0.5 rounded text-[9px] font-bold text-green-600 bg-green-50 hover:bg-green-100 transition-colors"
+                <span className="flex gap-0.5 shrink-0 ml-auto">
+                  <span
+                    onClick={e => { e.stopPropagation(); e.preventDefault(); window.open(`https://map.naver.com/v5/search/${encodeURIComponent(place.place_name + ' ' + (place.address || ''))}`, '_blank', 'noopener,noreferrer'); }}
+                    className="px-1.5 py-0.5 rounded text-[9px] font-bold text-green-600 bg-green-50 hover:bg-green-100 transition-colors cursor-pointer"
                   >
                     네이버지도
-                  </a>
-                  <a
-                    href={`https://map.kakao.com/link/search/${encodeURIComponent(place.place_name + ' ' + (place.address || ''))}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-1.5 py-0.5 rounded text-[9px] font-bold text-yellow-600 bg-yellow-50 hover:bg-yellow-100 transition-colors"
+                  </span>
+                  <span
+                    onClick={e => { e.stopPropagation(); e.preventDefault(); window.open(`https://map.kakao.com/link/search/${encodeURIComponent(place.place_name + ' ' + (place.address || ''))}`, '_blank', 'noopener,noreferrer'); }}
+                    className="px-1.5 py-0.5 rounded text-[9px] font-bold text-yellow-600 bg-yellow-50 hover:bg-yellow-100 transition-colors cursor-pointer"
                   >
                     카카오맵
-                  </a>
+                  </span>
                 </span>
               )}
             </p>

@@ -243,7 +243,7 @@ function MapContainerImpl({ places }: MapProps) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-black text-slate-900 text-base tracking-tight truncate">{selectedPlace.place_name}</h3>
-                          <span className="shrink-0 px-1.5 py-0.5 bg-emerald-50 rounded-md text-[9px] font-black text-emerald-600">{selectedPlace.category}</span>
+                          <span className="shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-black" style={{ backgroundColor: getCategoryColor(selectedPlace.category)+'20', color: getCategoryColor(selectedPlace.category) }}>{selectedPlace.category}</span>
                         </div>
                         <p className="text-[11px] font-semibold text-slate-400 truncate">{selectedPlace.address}</p>
                       </div>
@@ -282,7 +282,7 @@ function MapContainerImpl({ places }: MapProps) {
                     {/* Menu */}
                     {selectedPlace.representative_menu && (
                       <div className="bg-slate-50 rounded-xl px-3 py-2.5">
-                        <p className="text-[9px] font-black text-emerald-500 uppercase tracking-wider mb-1">MENU</p>
+                        <p className="text-[9px] font-black uppercase tracking-wider mb-1" style={{ color: getCategoryColor(selectedPlace.category) }}>MENU</p>
                         <p className="text-xs font-semibold text-slate-700 line-clamp-2 whitespace-pre-line">{selectedPlace.representative_menu}</p>
                       </div>
                     )}
@@ -342,7 +342,8 @@ function MapContainerImpl({ places }: MapProps) {
                         setSelectedPlace(null);
                         setTimeout(() => router.push(`/place/${selectedPlace.id}`), 50);
                       }}
-                      className="flex-[2] py-2.5 bg-emerald-500 text-white text-[11px] font-black rounded-xl hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
+                      className="flex-[2] py-2.5 text-white text-[11px] font-black rounded-xl hover:brightness-110 transition-all active:scale-95 shadow-lg"
+                      style={{ backgroundColor: getCategoryColor(selectedPlace.category), boxShadow: `0 4px 14px ${getCategoryColor(selectedPlace.category)}33` }}
                     >
                       상세보기
                     </button>
