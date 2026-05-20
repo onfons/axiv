@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useAppStore } from '@/lib/store';
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { CATEGORIES, getCategoryIcon } from '@/lib/categories';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -72,14 +72,13 @@ export default function Header() {
           {/* Search Bar (Left area, beside logo) */}
           <form onSubmit={handleSearchSubmit} className="flex-1 max-w-[340px] relative">
             <div className="relative">
-              <Search className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <input
                 ref={inputRef}
                 type="text"
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 placeholder="유튜버명, 장소명, 메뉴 검색..."
-                className="w-full pl-6 pr-7 py-2.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-emerald-400/30 focus:border-emerald-400/50 transition-all shadow-xl"
+                className="w-full px-3 py-2.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-emerald-400/30 focus:border-emerald-400/50 transition-all shadow-xl"
               />
               {localSearch && (
                 <button
