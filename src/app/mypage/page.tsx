@@ -5,13 +5,12 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAppStore } from '@/lib/store';
 import Image from 'next/image';
 import { 
-  Heart, 
-  Video, 
-  Trash2, 
-  ExternalLink, 
-  MapPin, 
+  Heart,
+  Video,
+  Trash2,
+  ExternalLink,
+  MapPin,
   Phone,
-  Settings,
   ChevronRight,
   Loader2,
   Bookmark
@@ -28,21 +27,24 @@ export default function MyPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // 1. Fetch My Contents
-        const { data: contentsData } = await supabase
-          .from('contents')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        // 2. Fetch Favorite Places (via service API - RLS 우회)
         const { data: { user } } = await supabase.auth.getUser();
+
         if (user) {
+          // 1. Fetch My Contents (본인 것만)
+          const { data: contentsData } = await supabase
+            .from('contents')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          setContents(contentsData || []);
+
+          // 2. Fetch Favorite Places
           const res = await fetch('/api/service-save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              action: 'get_favorites_with_places', 
-              data: { userId: user.id } 
+            body: JSON.stringify({
+              action: 'get_favorites_with_places',
+              data: { userId: user.id }
             })
           });
           const json = await res.json();
@@ -50,8 +52,6 @@ export default function MyPage() {
             setFavorites(json.data || []);
           }
         }
-        
-        setContents(contentsData || []);
       } catch (err) {
         console.error('Fetch error:', err);
       } finally {
