@@ -209,7 +209,7 @@ export default function MainPage() {
           {/* toggle button */}
           <button
             onClick={toggleSidebar}
-            className="absolute left-6 top-3 z-[90] w-9 h-9 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
+            className="absolute left-6 top-16 z-[90] w-9 h-9 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
           >
             {isSidebarOpen ? (
               <ChevronLeft className="w-4 h-4 text-slate-900 dark:text-white" />
