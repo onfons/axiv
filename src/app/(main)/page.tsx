@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import PlaceCard from '@/components/place/PlaceCard';
@@ -17,6 +17,8 @@ export default function MainPage() {
   const { selectedCategory, searchQuery, userLocation, setMapBounds } = useAppStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [sidebarReady, setSidebarReady] = useState(false);
+  const [showPill, setShowPill] = useState(false);
+  const pillTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // sessionStorage에서 사이드바 상태 복원 (뒤로가기 시 닫힌 상태 유지)
   useEffect(() => {
@@ -91,6 +93,10 @@ export default function MainPage() {
   const handleBoundsChange = useCallback((bounds: { swLat: number; swLng: number; neLat: number; neLng: number }) => {
     setLocalMapBounds(bounds);
     setMapBounds(bounds);
+    // 지도 이동 시 Pill 바 표시, 3초 후 사라짐
+    setShowPill(true);
+    if (pillTimerRef.current) clearTimeout(pillTimerRef.current);
+    pillTimerRef.current = setTimeout(() => setShowPill(false), 3000);
   }, [setMapBounds]);
 
   useEffect(() => {
@@ -229,7 +235,7 @@ export default function MainPage() {
             <MapContainer places={places} onBoundsChange={handleBoundsChange} />
 
             {/* 하단 플로팅 Pill 바 */}
-            {sidebarReady && !isSidebarOpen && places.length > 0 && (
+            {sidebarReady && !isSidebarOpen && places.length > 0 && showPill && (
               <motion.button
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}

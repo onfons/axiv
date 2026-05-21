@@ -3,32 +3,19 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
 import { useAppStore } from '@/lib/store';
 import { X, Menu } from 'lucide-react';
 import { CATEGORIES, getCategoryIcon } from '@/lib/categories';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
-import UserMenu from './UserMenu';
-
 export default function Header() {
-  const [session, setSession] = useState<any>(null);
   const [localSearch, setLocalSearch] = useState('');
   const { searchQuery, setSearchQuery, selectedCategory, setSelectedCategory } = useAppStore();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
   const isHidden = pathname?.startsWith('/place/');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    return () => subscription.unsubscribe();
-  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,8 +44,13 @@ export default function Header() {
         
         {/* Row 1: Logo + Search + UserMenu */}
         <div className="flex items-center gap-2">
-          
-          {/* Home Button (Left) */}
+
+          {/* Hamburger Menu (Left) */}
+          <button className="shrink-0 w-10 h-10 flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
+            <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+          </button>
+
+          {/* Home Button */}
           <Link href="/" className="shrink-0 flex items-center h-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl px-2.5 rounded-2xl border border-white/20 dark:border-slate-800 shadow-xl group hover:scale-[1.02] active:scale-95 transition-all">
             <Image
               src="/onfons_logo.svg"
@@ -70,7 +62,7 @@ export default function Header() {
             />
           </Link>
 
-          {/* Search Bar (Left area, beside logo) */}
+          {/* Search Bar */}
           <form onSubmit={handleSearchSubmit} className="flex-1 max-w-[340px] relative">
             <div className="relative h-10">
               <input
@@ -93,18 +85,6 @@ export default function Header() {
             </div>
           </form>
 
-          {/* Mobile Hamburger Menu (Left of UserMenu) */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="shrink-0 w-10 h-10 flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-xl hover:scale-[1.02] active:scale-95 transition-all md:hidden"
-          >
-            <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-          </button>
-
-          {/* User Menu (Right) */}
-          <div className="shrink-0">
-            <UserMenu />
-          </div>
         </div>
 
         {/* Row 2: Category Filters */}
