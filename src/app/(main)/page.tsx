@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import PlaceCard from '@/components/place/PlaceCard';
 import { supabase } from '@/lib/supabaseClient';
 import { useAppStore } from '@/lib/store';
-import { List, ChevronLeft, ChevronRight } from 'lucide-react';
+import { List, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 
 const MapContainer = dynamic(() => import('@/components/map/MapContainer'), { ssr: false });
@@ -125,7 +125,7 @@ export default function MainPage() {
       }
 
       const { data, error } = await query.order('created_at', { ascending: false }).limit(200);
-      
+
       if (error) {
         console.error('Places fetch error:', error);
         return;
@@ -137,7 +137,7 @@ export default function MainPage() {
         filtered = filtered.filter((place: any) => {
           const matchesName = place.place_name?.toLowerCase().includes(lowerQuery);
           const matchesAddress = place.address?.toLowerCase().includes(lowerQuery);
-          const matchesCreator = place.content_places?.some((cp: any) => 
+          const matchesCreator = place.content_places?.some((cp: any) =>
             cp.contents?.creator_name?.toLowerCase().includes(lowerQuery)
           );
           // 썸네일 설명에서도 검색
@@ -168,35 +168,53 @@ export default function MainPage() {
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950">
-      
+
       {/* Fixed header padding */}
       <div className="pt-[60px] flex-1 flex flex-col overflow-hidden">
-        
+
         <div className="flex flex-1 relative overflow-hidden">
-          
-          {/* Sidebar */}
+
+          {/* Sidebar - 바텀시트 */}
           <AnimatePresence initial={false}>
             {sidebarReady && isSidebarOpen && (
               <motion.aside
-                initial={{ x: -420 }}
-                animate={{ x: 0 }}
-                exit={{ x: -420 }}
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="absolute md:absolute bottom-0 left-6 right-0 md:right-auto w-[calc(100%-24px)] md:w-[calc(100%-48px)] h-[50vh] md:h-[45vh] bg-white dark:bg-slate-950 z-[80] shadow-2xl md:shadow-xl border-r border-slate-100 dark:border-slate-900 flex flex-col md:rounded-2xl md:top-[calc(50%+12px)] md:left-6"
+                className="absolute bottom-0 left-0 right-0 h-[55vh] bg-white dark:bg-slate-950 z-[90] shadow-2xl border-t border-slate-200 dark:border-slate-800 flex flex-col rounded-t-2xl"
               >
-                <div className="p-4 pb-2 mt-2">
-
-                  {/* Close button removed — moved outside sidebar */}
-
+                {/* 바텀시트 핸들 */}
+                <div className="flex justify-center pt-3 pb-1 shrink-0">
+                  <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 pb-20 custom-scrollbar space-y-3">
+                {/* 헤더 */}
+                <div className="px-4 pb-2 flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-slate-800 dark:text-white">
+                      유튜브 핫플
+                    </span>
+                    <span className="text-xs font-semibold text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                      {places.length}곳
+                    </span>
+                  </div>
+                  <button
+                    onClick={toggleSidebar}
+                    className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <ChevronUp className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  </button>
+                </div>
+
+                {/* 리스트 */}
+                <div className="flex-1 overflow-y-auto px-4 pb-24 custom-scrollbar space-y-3">
                   {places.map((place, idx) => (
                     <motion.div
                       key={place.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.05 }}
+                      transition={{ delay: Math.min(idx * 0.03, 0.5) }}
                     >
                       <PlaceCard place={place} mrtData={mrtDataMap[place.id]} />
                     </motion.div>
@@ -206,30 +224,25 @@ export default function MainPage() {
             )}
           </AnimatePresence>
 
-          {/* toggle button */}
-          <button
-            onClick={toggleSidebar}
-            className="absolute left-6 top-16 z-[90] w-9 h-9 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
-          >
-            {isSidebarOpen ? (
-              <ChevronLeft className="w-4 h-4 text-slate-900 dark:text-white" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-slate-900 dark:text-white" />
-            )}
-          </button>
-
           {/* Map */}
           <div className="flex-1 h-full z-0 relative">
             <MapContainer places={places} onBoundsChange={handleBoundsChange} />
 
-            {/* hotplace button when sidebar closed */}
-            {!isSidebarOpen && places.length > 0 && (
-              <button
+            {/* 하단 플로팅 Pill 바 */}
+            {sidebarReady && !isSidebarOpen && places.length > 0 && (
+              <motion.button
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 20, opacity: 0 }}
                 onClick={toggleSidebar}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[100] px-5 py-2.5 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.2)] border border-emerald-500/30 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 bg-white dark:bg-slate-900 rounded-full shadow-[0_4px_24px_rgba(0,0,0,0.15)] border border-slate-200/60 dark:border-slate-700/60 flex items-center gap-2 hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
-                이 지역 유튜브 핫플 {places.length}곳 보기
-              </button>
+                <List className="w-4 h-4 text-emerald-500" />
+                <span className="text-sm font-bold text-slate-800 dark:text-white">
+                  장소 {places.length}곳
+                </span>
+                <ChevronUp className="w-4 h-4 text-slate-400" />
+              </motion.button>
             )}
           </div>
 

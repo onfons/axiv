@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useAppStore } from '@/lib/store';
-import { X } from 'lucide-react';
+import { X, Menu } from 'lucide-react';
 import { CATEGORIES, getCategoryIcon } from '@/lib/categories';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -20,6 +20,7 @@ export default function Header() {
   const inputRef = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
   const isHidden = pathname?.startsWith('/place/');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -58,7 +59,7 @@ export default function Header() {
         <div className="flex items-center gap-2">
           
           {/* Home Button (Left) */}
-          <Link href="/" className="shrink-0 flex items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl px-2.5 py-1.5 rounded-2xl border border-white/20 dark:border-slate-800 shadow-xl group hover:scale-[1.02] active:scale-95 transition-all">
+          <Link href="/" className="shrink-0 flex items-center h-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl px-2.5 rounded-2xl border border-white/20 dark:border-slate-800 shadow-xl group hover:scale-[1.02] active:scale-95 transition-all">
             <Image
               src="/onfons_logo.svg"
               alt="OnFons"
@@ -71,14 +72,14 @@ export default function Header() {
 
           {/* Search Bar (Left area, beside logo) */}
           <form onSubmit={handleSearchSubmit} className="flex-1 max-w-[340px] relative">
-            <div className="relative">
+            <div className="relative h-10">
               <input
                 ref={inputRef}
                 type="text"
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 placeholder="유튜버명, 장소명, 메뉴 검색..."
-                className="w-full px-3 py-2.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-emerald-400/30 focus:border-emerald-400/50 transition-all shadow-xl"
+                className="w-full h-full px-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-emerald-400/30 focus:border-emerald-400/50 transition-all shadow-xl"
               />
               {localSearch && (
                 <button
@@ -91,6 +92,14 @@ export default function Header() {
               )}
             </div>
           </form>
+
+          {/* Mobile Hamburger Menu (Left of UserMenu) */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="shrink-0 w-10 h-10 flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-xl hover:scale-[1.02] active:scale-95 transition-all md:hidden"
+          >
+            <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+          </button>
 
           {/* User Menu (Right) */}
           <div className="shrink-0">
