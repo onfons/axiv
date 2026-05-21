@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import PlaceCard from '@/components/place/PlaceCard';
@@ -17,8 +17,6 @@ export default function MainPage() {
   const { selectedCategory, searchQuery, userLocation, setMapBounds } = useAppStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [sidebarReady, setSidebarReady] = useState(false);
-  const [showPill, setShowPill] = useState(false);
-  const pillTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // sessionStorage에서 사이드바 상태 복원 (뒤로가기 시 닫힌 상태 유지)
   useEffect(() => {
@@ -93,10 +91,6 @@ export default function MainPage() {
   const handleBoundsChange = useCallback((bounds: { swLat: number; swLng: number; neLat: number; neLng: number }) => {
     setLocalMapBounds(bounds);
     setMapBounds(bounds);
-    // 지도 이동 시 Pill 바 표시, 3초 후 사라짐
-    setShowPill(true);
-    if (pillTimerRef.current) clearTimeout(pillTimerRef.current);
-    pillTimerRef.current = setTimeout(() => setShowPill(false), 3000);
   }, [setMapBounds]);
 
   useEffect(() => {
@@ -234,20 +228,22 @@ export default function MainPage() {
           <div className="flex-1 h-full z-0 relative">
             <MapContainer places={places} onBoundsChange={handleBoundsChange} />
 
-            {/* 하단 플로팅 Pill 바 */}
-            {sidebarReady && !isSidebarOpen && places.length > 0 && showPill && (
+            {/* 하단 플로팅 Pill 바 - 항상 보임 */}
+            {sidebarReady && !isSidebarOpen && places.length > 0 && (
               <motion.button
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 20, opacity: 0 }}
                 onClick={toggleSidebar}
-                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 bg-white dark:bg-slate-900 rounded-full shadow-[0_4px_24px_rgba(0,0,0,0.15)] border border-slate-200/60 dark:border-slate-700/60 flex items-center gap-2 hover:shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 bg-white dark:bg-slate-900 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.25)] border-2 border-emerald-400 dark:border-emerald-500 flex items-center gap-2 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                style={{ boxShadow: "0 0 0 4px rgba(16,185,129,0.15), 0 8px 32px rgba(0,0,0,0.2)" }}
               >
-                <List className="w-4 h-4 text-emerald-500" />
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+                  <List className="w-4 h-4 text-white" />
+                </div>
                 <span className="text-sm font-bold text-slate-800 dark:text-white">
-                  장소 {places.length}곳
+                  장소 리스트 {places.length}곳
                 </span>
-                <ChevronUp className="w-4 h-4 text-slate-400" />
+                <ChevronUp className="w-4 h-4 text-emerald-500" />
               </motion.button>
             )}
           </div>

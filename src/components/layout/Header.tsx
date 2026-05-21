@@ -8,6 +8,7 @@ import { X, Menu } from 'lucide-react';
 import { CATEGORIES, getCategoryIcon } from '@/lib/categories';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import UserMenu from '@/components/layout/UserMenu';
 
 export default function Header() {
   const [localSearch, setLocalSearch] = useState('');
@@ -42,13 +43,8 @@ export default function Header() {
     <header className={`fixed top-0 left-0 right-0 z-[110] pointer-events-none ${isHidden ? 'hidden' : ''}`}>
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-3 sm:pt-4 space-y-2 pointer-events-auto">
         
-        {/* Row 1: Logo + Search + UserMenu */}
+        {/* Row 1: Logo + Search + Hamburger + UserMenu */}
         <div className="flex items-center gap-2">
-
-          {/* Hamburger Menu (Left) */}
-          <button className="shrink-0 w-10 h-10 flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
-            <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-          </button>
 
           {/* Home Button */}
           <Link href="/" className="shrink-0 flex items-center h-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl px-2.5 rounded-2xl border border-white/20 dark:border-slate-800 shadow-xl group hover:scale-[1.02] active:scale-95 transition-all">
@@ -84,6 +80,9 @@ export default function Header() {
               )}
             </div>
           </form>
+
+          {/* Hamburger Menu (Right of Search) */}
+          <UserMenu />
 
         </div>
 

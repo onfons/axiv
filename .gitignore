@@ -43,3 +43,18 @@ __pycache__/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temp scripts
+scripts/batch_progress.log
+scripts/*.txt
+scripts/batch2_final.py
+scripts/batch_weak.py
+scripts/check_missing_details.py
+scripts/check_progress.py
+scripts/collect_*.py
+scripts/diagnose_ytdlp.py
+scripts/enrich_details.py
+scripts/process_valid_urls.py
+scripts/run_batch.py
+scripts/search_urls.py
+scripts/validate_and_collect.py

@@ -1,36 +1,140 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# axiv (액시브)
 
-## Getting Started
+> **유튜버가 직접 경험하고 추천한 장소를 한눈에 — 지도 위에 펼쳐진 크리에이터의 리얼 추천 맵**
 
-First, run the development server:
+유튜버들의 생생한 장소 리뷰와 정보를 모아 지도에서 바로 찾아볼 수 있는 서비스입니다. 전국 612개 장소, 10개 카테고리의 데이터를 크리에이터의 실제 경험과 함께 제공합니다.
+
+---
+
+## ✨ 핵심 기능
+
+### 🗺️ 인터랙티브 지도
+- Leaflet 기반 반응형 지도에서 모든 장소 탐색
+- 내 위치 기반 반경 검색 (GPS 지원)
+- 카테고리별 필터링 (맛집, 카페, 캠핑, 낚시, 여행, 숙소 등 10개 카테고리)
+
+### 🎬 유튜브 콘텐츠 연동
+- 각 장소는 관련 유튜브 영상과 직접 연결
+- 크리에이터가 직접 리뷰한 타임라인, 생생한 리뷰 텍스트 제공
+- 영상 미리보기 썸네일 → 클릭 시 해당 타임코드로 이동
+
+### 📋 상세 장소 정보
+- **메뉴/가격**: 실제 메뉴판 정보
+- **영업시간**: 평일/주말 운영 시간, 브레이크타임
+- **전화번호/주소**: 93%의 장소 전화번호 보유
+- **웨이팅/주차 팁**: 실제 방문객을 위한 꿀팁
+- **별점/리뷰**: MyRealTrip 데이터 연동
+
+### ✅ 교차검증 시스템
+- 유튜브 영상의 장소 정보와 실제 주소를 AI 교차검증
+- 부정확한 정보 자동 필터링
+- 신규 장소 관리자 승인 시스템 (Dashboard)
+
+---
+
+## 🗂️ 카테고리
+
+| 카테고리 | 장소 수 | 설명 |
+|----------|--------|------|
+| 🍴 맛집 | 353 | 전국 맛집 리뷰 |
+| ☕ 카페 | 104 | 감성 카페, 디저트 |
+| ⛺ 캠핑 | 24 | 캠핑장, 글램핑 |
+| 🎣 낚시 | 17 | 낚시 포인트 |
+| ✈️ 여행 | 91 | 국내외 여행지 |
+| 🏨 숙소 | 10 | 호텔, 리조트, 펜션 |
+| 🎪 팝업 | — | 팝업스토어 |
+| 🖼️ 전시 | — | 전시회 |
+| 🎯 액티비티 | — | 체험 활동 |
+| 🚗 드라이브 | — | 드라이브 코스 |
+
+---
+
+## 🌏 커버리지
+
+| 지역 | 장소 수 |
+|------|--------|
+| 서울 | 110 |
+| 부산 | 62 |
+| 제주 | 60 |
+| 경기 | 52 |
+| 전북(전주) | 36 |
+| 경북(포항/경주) | 32 |
+| 대구 | 20 |
+| 전남(여수) | 20 |
+| 인천 | 18 |
+| 강원 | 17 |
+| 충북(청주) | 8 |
+| 광주 | 13 |
+| 울산 | 14 |
+| 대전 | 15 |
+| 충남 | 10 |
+| 경남 | 17 |
+| **해외** | **51** (도쿄/오사카/방콕/파리/뉴욕 등) |
+
+---
+
+## 🛠️ 기술 스택
+
+| 영역 | 기술 |
+|------|------|
+| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS |
+| **지도** | Leaflet, React-Leaflet |
+| **상태 관리** | Zustand |
+| **애니메이션** | Framer Motion |
+| **백엔드** | Next.js API Routes |
+| **DB** | Supabase (PostgreSQL) |
+| **AI 처리** | NVIDIA Nemotron (자막 분석, 교차검증) |
+| **데이터 파이프라인** | Python (yt-dlp, DuckDuckGo Search, 네이버 검색) |
+
+---
+
+## 🚀 시작하기
 
 ```bash
+# 의존성 설치
+npm install
+
+# 개발 서버 실행
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# 빌드
+npm run build
+
+# 프로덕션 실행
+npm start
 ```
 
-Open [http://localhost:3001](http://localhost:3001) with your browser to see the result.
+개발 서버는 `http://localhost:3001`에서 실행됩니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 환경 변수 설정
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`.env.local` 파일에 다음 변수 설정 필요:
 
-## Learn More
+| 변수 | 설명 |
+|------|------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase 서비스 롤 키 |
+| `NVIDIA_API_KEY` | NVIDIA AI API 키 |
+| `NEXT_PUBLIC_GOOGLE_MAPS_KEY` | (선택) Google Maps |
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🧠 데이터 수집 아키텍처
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+YouTube URL → yt-dlp (자막) → AI 분석 (장소 추출) 
+  → 네이버/웹 교차검증 → Supabase DB 저장
+  → enrich_v3.py (전화번호/영업시간/메뉴 보강)
+  → MyRealTrip API (별점/가격 연동)
+```
 
-## Deploy on Vercel
+- `scripts/batch_save.py` — 메인 데이터 수집 파이프라인 (v3.1 낙관적 검증)
+- `scripts/enrich_v3.py` — 상세정보 보강 (전화번호/영업시간/메뉴)
+- `scripts/enrich_v2.py` — 네이버 검색 기반 추가 정보
+- `scripts/check_missing.py` — 누락 데이터 분석
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📄 라이선스
+
+Private 프로젝트

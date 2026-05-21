@@ -61,9 +61,12 @@ def get_youtube_full_data(url):
 
         if sub_url:
             if 'fmt=json3' not in sub_url: sub_url += '&fmt=json3'
-            res = requests.get(sub_url)
-            events = res.json().get('events', [])
-            transcript_text = " ".join(["".join([s.get('utf8', '') for s in e.get('segs', [])]) for e in events if 'segs' in e])
+            try:
+                res = requests.get(sub_url, timeout=15)
+                events = res.json().get('events', [])
+                transcript_text = " ".join(["".join([s.get('utf8', '') for s in e.get('segs', [])]) for e in events if 'segs' in e])
+            except Exception:
+                transcript_text = ""  # 자막 없으면 빈 문자열로 진행
 
         return {
             "video_id": info.get('id'),
