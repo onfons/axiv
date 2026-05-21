@@ -228,8 +228,8 @@ export default function MainPage() {
           <div className="flex-1 h-full z-0 relative">
             <MapContainer places={places} onBoundsChange={handleBoundsChange} />
 
-            {/* 하단 플로팅 Pill 바 - 항상 보임 */}
-            {sidebarReady && !isSidebarOpen && places.length > 0 && (
+            {/* 하단 플로팅 Pill 바 - 항상 보임 (장소 0개여도 버튼 노출) */}
+            {sidebarReady && !isSidebarOpen && (
               <motion.button
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -241,7 +241,7 @@ export default function MainPage() {
                   <List className="w-4 h-4 text-white" />
                 </div>
                 <span className="text-sm font-bold text-slate-800 dark:text-white">
-                  장소 리스트 {places.length}곳
+                  장소 리스트 {places.length > 0 ? `${places.length}곳` : '열기'}
                 </span>
                 <ChevronUp className="w-4 h-4 text-emerald-500" />
               </motion.button>
