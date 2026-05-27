@@ -416,7 +416,7 @@ const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임�
               place_description: place.place_description || null,
               waiting_tip: cleanWaiting,
               parking_info: cleanParking,
-              status: (finalStatus and 'approved' or 'pending')
+              status: (finalStatus ? 'approved' : 'pending')
             }
           })
         });
