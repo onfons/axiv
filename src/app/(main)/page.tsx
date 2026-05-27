@@ -114,7 +114,7 @@ export default function MainPage() {
       query = query.eq('status', 'approved');
 
       // Bounds 필터 (우선순위: 지도 bounds > GPS 초기 bounds)
-      const activeBounds = mapBounds || getInitialBounds();
+      const activeBounds = mapBounds || (userLocation ? getInitialBounds() : null);
       if (activeBounds) {
         query = query
           .gte('lat', activeBounds.swLat)
