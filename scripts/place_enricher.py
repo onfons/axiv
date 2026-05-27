@@ -10,6 +10,30 @@ GOOGLE_API_KEY = os.getenv('NEXT_PUBLIC_GOOGLE_MAPS_KEY', '')
 NVIDIA_API_KEY = os.getenv('NVIDIA_API_KEY', '')
 
 def search_google_places(place_name, address=""):
+
+def determine_category(name, address, description=""):
+    """
+    상호명, 주소, 설명을 분석하여 최적의 카테고리를 결정함
+    """
+    text = f"{name} {address} {description}".lower()
+    
+    categories = {
+        'fitness': ['헬스', '피트니스', '요가', '필라테스', 'PT', '수영장', '짐', 'gym', 'fitness', '크로스핏'],
+        'sport': ['테니스', '골프', '볼링', '클라이밍', '스쿼시', '배드민턴', '풋살', '스포츠', 'sport', '탁구'],
+        'experience': ['공방', '원데이', '체험', '클래스', '공예', '전시', '액티비티', 'experience', '박물관', '미술관'],
+        'food': ['식당', '맛집', '음식점', '요리', 'food', 'restaurant', '분식', '면', '밥집'],
+        'cafe': ['카페', '커피', '디저트', 'cafe', 'coffee', '베이커리', '빵집'],
+        'accommodation': ['호텔', '펜션', '게스트하우스', '숙소', 'accommodation', 'hotel', '리조트'],
+        'camping': ['캠핑', '글램핑', '캠핑장', 'camping'],
+        'fishing': ['낚시', '낚시터', 'fishing'],
+    }
+    
+    for cat, keywords in categories.items():
+        if any(kw in text for kw in keywords):
+            return cat
+            
+    return 'food' # 기본값
+
     """
     Google Places API (New)로 매장 상세정보 검색
     Returns: {phone, hours, lat, lng, formatted_address} or None
@@ -157,9 +181,10 @@ def extract_menu_with_ai(place_name, address=""):
         return None
 
 
+
 def enrich_place(place_id, place_name, address):
     """
-    단일 매장 상세정보 보강 (Google → Naver → AI menu 순서)
+    단일 매장 상세정보 보강 (Google -> Naver -> AI menu 순서 + 카테고리 자동 분류)
     """
     updates = {}
     
@@ -175,12 +200,10 @@ def enrich_place(place_id, place_name, address):
         if google.get('lat') and google.get('lng'):
             updates['lat'] = google['lat']
             updates['lng'] = google['lng']
-        if google.get('formatted_address') and len(google['formatted_address']) > len(updates.get('address', '')):
+        if google.get('formatted_address') and len(google['formatted_address']) > len(address):
             updates['address'] = google['formatted_address']
     else:
         print("❌")
-        
-        # 2. Google 실패 시 Naver (전화번호만)
         if not updates.get('phone'):
             print(f"  🔍 Naver 검색: {place_name}...", end=' ')
             naver = search_naver_place(place_name, address)
@@ -190,7 +213,7 @@ def enrich_place(place_id, place_name, address):
             else:
                 print("❌")
     
-    # 3. NVIDIA AI로 메뉴 추출
+    # 2. NVIDIA AI로 메뉴 추출
     if not updates.get('representative_menu'):
         print(f"  🤖 AI 메뉴 추출: {place_name}...", end=' ')
         menu = extract_menu_with_ai(place_name, address)
@@ -199,5 +222,13 @@ def enrich_place(place_id, place_name, address):
             print("✅")
         else:
             print("❌")
+
+    # 3. 카테고리 자동 분류 추가
+    # 상호명, 주소, 그리고 AI가 추출한 메뉴/설명을 종합하여 카테고리 결정
+    final_name = updates.get('place_name', place_name)
+    final_addr = updates.get('address', address)
+    final_desc = updates.get('representative_menu', '')
+    
+    updates['category'] = determine_category(final_name, final_addr, final_desc)
     
     return updates
