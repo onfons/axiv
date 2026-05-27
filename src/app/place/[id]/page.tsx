@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Phone, ShoppingBag, Clock, Play, ChevronLeft, Heart, ExternalLink, UtensilsCrossed, ShoppingCart, Hotel, Tent, MapPin } from 'lucide-react';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { useAppStore } from '@/lib/store';
+import ExternalMapLinks from '@/components/place/ExternalMapLinks';
 
 // ── Affiliate Section ──
 const AFFILIATE_LINKS: Record<string, { href: string; label: string; icon: React.ElementType; subLabel: string }[]> = {
@@ -637,15 +638,11 @@ export default function PlaceDetailPage() {
                 </div>
 
 
-                <div className="pt-6 border-t border-slate-50 dark:border-slate-800 hidden">
-                   <a
-                    href={`https://map.naver.com/v5/search/${encodeURIComponent(place.place_name + ' ' + place.address)}`}
-                    target="_blank"
-                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 active:scale-95"
-                   >
-                    <span>네이버 지도에서 보기</span>
-                   </a>
-                </div>
+                {/* 외부 맵 링크 */}
+                <ExternalMapLinks 
+                  googleUrl={place.google_place_url} 
+                  naverUrl={place.naver_place_url} 
+                />
               </div>
             </div>
           </div>

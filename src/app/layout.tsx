@@ -1,3 +1,4 @@
+/usr/bin/bash: warning: setlocale: LC_ALL: cannot change locale (ko_KR.UTF-8): No such file or directory
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
@@ -24,6 +25,8 @@ export default function RootLayout({ children }: PropsWithChildren) {
         <meta name="agd-partner-manual-verification" />
         <meta name="google-adsense-account" content="ca-pub-9783521908231028" />
         <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+        {/* Google AdSense */}
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9783521908231028" crossOrigin="anonymous"></script>
       </head>
       <body className="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 h-full flex flex-col font-sans">
         <Header />

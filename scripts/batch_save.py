@@ -12,7 +12,7 @@ from app.utils import get_youtube_full_data, perform_deep_search
 NVIDIA_API_KEY = os.getenv('NVIDIA_API_KEY')
 SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
 SUPABASE_SERVICE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
-NVIDIA_MODEL = "nvidia/nvidia-nemotron-nano-9b-v2"
+NVIDIA_MODEL = "meta/llama-3.1-70b-instruct"
 NVIDIA_BASE = "https://integrate.api.nvidia.com/v1"
 
 
@@ -33,6 +33,51 @@ def web_search_place(place_name, address):
         pass
     return context
 
+
+
+
+def naver_search_verify(place_name, address):
+    """네이버 검색 API로 장소 존재 여부 확인"""
+    client_id = os.getenv('NAVER_CLIENT_ID', '')
+    client_secret = os.getenv('NAVER_CLIENT_SECRET', '')
+    
+    if not client_id or not client_secret:
+        return False, 0
+    
+    query = f"{place_name} {address}" if address else place_name
+    
+    try:
+        headers = {
+            'X-Naver-Client-Id': client_id,
+            'X-Naver-Client-Secret': client_secret
+        }
+        
+        # 지역 검색 API (local)
+        local_url = f"https://openapi.naver.com/v1/search/local?query={urllib.parse.quote(query)}&display=1"
+        resp = requests.get(local_url, headers=headers, timeout=10)
+        
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get('items') and len(data['items']) > 0:
+                item = data['items'][0]
+                title = item.get('title', '').replace('<b>', '').replace('</b>', '')
+                # 장소명이 검색 결과와 유사하면 통과
+                if place_name.lower() in title.lower() or title.lower() in place_name.lower():
+                    return True, 70
+                return True, 50
+        
+        # 웹 검색 API (fallback)
+        web_url = f"https://openapi.naver.com/v1/search/webkr?query={urllib.parse.quote(query)}&display=1"
+        resp = requests.get(web_url, headers=headers, timeout=10)
+        
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get('items') and len(data['items']) > 0:
+                return True, 40
+    except:
+        pass
+    
+    return False, 0
 
 def verify_place(place_name, address):
     """교차검증 v3.1: 낙관적 — 주소 형식이 맞으면 통과"""
@@ -80,6 +125,49 @@ def verify_place(place_name, address):
     if len(address) > 10:
         return True, 40
     return False, 0
+
+
+def extract_place_urls(place_name, address):
+    """Google/Naver Place URL 추출"""
+    google_url = None
+    naver_url = None
+    
+    # Google Places API
+    google_key = os.getenv('NEXT_PUBLIC_GOOGLE_MAPS_KEY', '')
+    if google_key:
+        try:
+            resp = requests.post(
+                'https://places.googleapis.com/v1/places:searchText',
+                headers={
+                    'Content-Type': 'application/json',
+                    'X-Goog-Api-Key': google_key,
+                    'X-Goog-FieldMask': 'places.id,places.googleMapsUri',
+                },
+                json={'textQuery': f"{place_name} {address[:50]}", 'maxResultCount': 1, 'languageCode': 'ko'},
+                timeout=10
+            )
+            data = resp.json()
+            if data.get('places'):
+                place = data['places'][0]
+                uri = place.get('googleMapsUri', '')
+                if uri:
+                    google_url = uri
+                else:
+                    place_id = place.get('id', '')
+                    if place_id:
+                        google_url = f"https://www.google.com/maps/place/?q=place_id:{place_id}"
+        except:
+            pass
+    
+    # Naver URL
+    try:
+        from urllib.parse import quote
+        query = f"{place_name} {address[:30]}".strip()
+        naver_url = f"https://map.naver.com/search/{quote(query)}"
+    except:
+        pass
+    
+    return google_url, naver_url
 
 
 def geocode_address(address, place_name=""):
@@ -214,6 +302,13 @@ def analyze(url):
         for f in ['business_hours', 'break_time', 'menu_with_prices', 'place_description', 'phone']:
             if not p.get(f) or p[f] in ['없음', '정보 없음']: p[f] = ''
 
+        # Google/Naver URL 추출
+        google_url, naver_url = extract_place_urls(name, addr)
+        if google_url:
+            p['google_place_url'] = google_url
+        if naver_url:
+            p['naver_place_url'] = naver_url
+        
         verified_places.append(p)
 
     if not verified_places:
@@ -262,6 +357,8 @@ def save(result):
                 'break_time': p.get('break_time', '') or '',
                 'representative_menu': p.get('menu_with_prices', '') or '',
                 'place_description': p.get('place_description', '') or '',
+                'google_place_url': p.get('google_place_url', '') or '',
+                'naver_place_url': p.get('naver_place_url', '') or '',
                 'waiting_tip': p.get('waiting_tip', '') or '',
                 'parking_info': p.get('parking_info', '') or ''
             }
