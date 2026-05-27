@@ -1,4 +1,3 @@
-/usr/bin/bash: warning: setlocale: LC_ALL: cannot change locale (ko_KR.UTF-8): No such file or directory
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';

@@ -1,4 +1,3 @@
-/usr/bin/bash: warning: setlocale: LC_ALL: cannot change locale (ko_KR.UTF-8): No such file or directory
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
