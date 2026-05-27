@@ -127,21 +127,21 @@ export async function POST(req: Request) {
       }
     }
 
-    if (action === 'get_unverified_places') {
+    if (action === 'get_pending_places') {
       const { data: result, error } = await serviceClient
         .from('places')
         .select('*')
-        .eq('verified', false)
+        .eq('status', 'pending')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return NextResponse.json({ data: result || [] });
     }
 
-    if (action === 'update_place_verified') {
-      const { id, verified } = data;
+    if (action === 'update_place_status') {
+      const { id, status } = data;
       const { data: result, error } = await serviceClient
         .from('places')
-        .update({ verified })
+        .update({ status })
         .eq('id', id)
         .select()
         .single();
@@ -176,11 +176,11 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
 
-    if (action === 'get_unverified') {
+    if (action === 'get_pending') {
       const { data, error } = await serviceClient
         .from('places')
         .select('*')
-        .eq('verified', false)
+        .eq('status', 'pending')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return NextResponse.json({ data: data || [] });

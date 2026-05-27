@@ -1,3 +1,4 @@
+/usr/bin/bash: warning: setlocale: LC_ALL: cannot change locale (ko_KR.UTF-8): No such file or directory
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -110,8 +111,8 @@ export default function MainPage() {
         )
       `);
 
-      // ✅ verified=True만 노출 (가짜 데이터 필터링)
-      query = query.eq('verified', true);
+      // ✅ approved 상태만 노출 (pending/rejected 제외)
+      query = query.eq('status', 'approved');
 
       // Bounds 필터 (우선순위: 지도 bounds > GPS 초기 bounds)
       const activeBounds = mapBounds || getInitialBounds();

@@ -315,11 +315,11 @@ const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임�
 
       // 2. Place Dedup & Save (위도/경도 + verified 포함!)
       let placeId: string;
-      let verifiedStatus = isPlaceNameClear(placeName); // 상호명 명확성 기본 판단
+      let statusValue = isPlaceNameClear(placeName); // 상호명 명확성 기본 판단
 
       const { data: existingPlace } = await supabase
         .from('places')
-        .select('id, lat, lng, verified, address')
+        .select('id, lat, lng, status, address')
         .eq('place_name', place.place_name)
         .eq('address', place.address || place.address_hint)
         .maybeSingle();
@@ -360,7 +360,7 @@ const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임�
               lat: updateLat,
               lng: updateLng,
               address: updateAddress,
-              verified: existingPlace.verified || verifiedStatus // 한 번이라도 verified=true면 유지
+              status: (existingPlace.status === 'approved' or statusValue) and 'approved' or 'pending' // 한 번이라도 verified=true면 유지
             }).eq('id', placeId);
           } catch (e) {
             console.warn('Update existing place failed:', e);
@@ -390,7 +390,7 @@ const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임�
         }
 
         // VWorld 검증 실패 시 address=null + verified=false
-        const finalVerified = geocodeSuccess && verifiedStatus;
+        const finalStatus = geocodeSuccess && statusValue;
         const finalAddress = geocodeSuccess ? fullAddress : null;
 
         // "없음" 값 정리
@@ -416,7 +416,7 @@ const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임�
               place_description: place.place_description || null,
               waiting_tip: cleanWaiting,
               parking_info: cleanParking,
-              verified: finalVerified
+              status: (finalStatus and 'approved' or 'pending')
             }
           })
         });
@@ -744,7 +744,7 @@ const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임�
                         )}
                       </button>
                       {!successItems.includes(place.place_name) && savingIndex !== index && isPlaceNameClear(place.place_name) && !place.place_name.includes('미상') && (
-                        <div className="text-[9px] font-bold text-emerald-500 text-center mt-1">자동 저장 (verified)</div>
+                        <div className="text-[9px] font-bold text-emerald-500 text-center mt-1">자동 저장</div>
                       )}
                       {!successItems.includes(place.place_name) && savingIndex !== index && !isPlaceNameClear(place.place_name) && !place.place_name.includes('미상') && place.place_name && (
                         <div className="text-[9px] font-bold text-amber-500 text-center mt-1">관리자 확인 후 승인 필요</div>

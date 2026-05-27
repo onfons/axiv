@@ -10,30 +10,30 @@ import dynamic from 'next/dynamic';
 const MapContainer = dynamic(() => import('@/components/map/MapContainer'), { ssr: false });
 
 export default function DashboardPage() {
-  const [unverifiedPlaces, setUnverifiedPlaces] = useState<any[]>([]);
+  const [pendingPlaces, setPendingPlaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<any>(null);
   const { showToast } = useAppStore();
 
-  const fetchUnverified = useCallback(async () => {
+  const fetchPending = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/service-save?action=get_unverified');
+      const res = await fetch('/api/service-save?action=get_pending');
       const json = await res.json();
       if (json.error) throw new Error(json.error);
-      setUnverifiedPlaces(json.data || []);
+      setPendingPlaces(json.data || []);
     } catch (e: any) {
-      console.error('Failed to fetch unverified places:', e);
-      showToast('미분류 장소 로딩 실패', 'error');
+      console.error('Failed to fetch pending places:', e);
+      showToast('보류 장소 로딩 실패', 'error');
     } finally {
       setLoading(false);
     }
   }, [showToast]);
 
   useEffect(() => {
-    fetchUnverified();
-  }, [fetchUnverified]);
+    fetchPending();
+  }, [fetchPending]);
 
   const handleApprove = async (id: string) => {
     setProcessingId(id);
@@ -42,13 +42,13 @@ export default function DashboardPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'update_place_verified',
-          data: { id, verified: true }
+          action: 'update_place_status',
+          data: { id, status: 'approved' }
         })
       });
       const json = await res.json();
       if (json.error) throw new Error(json.error);
-      setUnverifiedPlaces(prev => prev.filter(p => p.id !== id));
+      setPendingPlaces(prev => prev.filter(p => p.id !== id));
       showToast('장소가 승인되어 지도에 노출됩니다.', 'success');
     } catch (e: any) {
       showToast(`승인 실패: ${e.message}`, 'error');
@@ -63,7 +63,7 @@ export default function DashboardPage() {
     try {
       const { error } = await supabase.from('places').delete().eq('id', id);
       if (error) throw error;
-      setUnverifiedPlaces(prev => prev.filter(p => p.id !== id));
+      setPendingPlaces(prev => prev.filter(p => p.id !== id));
       showToast('장소가 삭제되었습니다.', 'success');
     } catch (e: any) {
       showToast(`삭제 실패: ${e.message}`, 'error');
@@ -81,11 +81,11 @@ export default function DashboardPage() {
             <div>
               <h1 className="text-lg font-black text-slate-900 dark:text-white">관리자 대시보드</h1>
               <p className="text-xs text-slate-500 mt-0.5">
-                미분류 장소 — 수동 확인 후 승인해주세요
+                보류 장소 — 수동 확인 후 승인해주세요
               </p>
             </div>
             <button
-              onClick={fetchUnverified}
+              onClick={fetchPending}
               disabled={loading}
               className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             >
@@ -101,7 +101,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
             <span className="text-sm font-bold text-amber-700 dark:text-amber-300">
-              {unverifiedPlaces.length}개 미분류
+              {pendingPlaces.length}개 보류
             </span>
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
           </div>
-        ) : unverifiedPlaces.length === 0 ? (
+        ) : pendingPlaces.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -126,12 +126,12 @@ export default function DashboardPage() {
           >
             <CheckCircle2 className="w-12 h-12 text-emerald-400 mb-4" />
             <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1">모든 장소가 승인되었습니다</h3>
-            <p className="text-sm text-slate-500">미분류된 장소가 없습니다.</p>
+            <p className="text-sm text-slate-500">보류된 장소가 없습니다.</p>
           </motion.div>
         ) : (
           <div className="grid gap-3">
             <AnimatePresence mode="popLayout">
-              {unverifiedPlaces.map((place, i) => (
+              {pendingPlaces.map((place, i) => (
                 <motion.div
                   key={place.id}
                   layout
