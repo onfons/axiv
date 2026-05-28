@@ -58,3 +58,17 @@ scripts/process_valid_urls.py
 scripts/run_batch.py
 scripts/search_urls.py
 scripts/validate_and_collect.py
+
+# Migration scripts
+scripts/final_*.py
+scripts/migrate_*.py
+scripts/migrate_*.json
+scripts/google_enrich_*.py
+scripts/naver_*.py
+scripts/enrich_*.py
+scripts/create_tables.sql
+scripts/update_env.py
+scripts/verify_*.py
+scripts/test_*.py
+scripts/restore_all_data*.py
+scripts/restore_content_places.py

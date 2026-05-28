@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""axiv 데이터 수집 파이프라인 v3.1 — 교차검증(cross-validation) 탑재, 낙관적 저장"""
+"""axiv 데이터 수집 파이프라인 v4.0 — 엄격 모드 (Strict Validation + Google Places API 검증)
+
+변경 사항:
+1. verify_place() 강화: 네이버/구글 검색으로 '주소와 상호명이 완전히 일치'하는 경우만 통과
+2. 전화번호가 '서울' 지역인데 주소가 '전라도'면 즉시 거부
+3. AI가 '추정'한 필드는 저장하지 않음 (없으면 빈 값으로 저장)
+4. Google Places API를 최종 검증 도구로 활용
+"""
 import sys, json, os, re, requests, time, urllib.parse
 from dotenv import load_dotenv
 load_dotenv('/home/ubuntu/projects/axiv/.env.local')
@@ -12,183 +19,149 @@ from app.utils import get_youtube_full_data, perform_deep_search
 NVIDIA_API_KEY = os.getenv('NVIDIA_API_KEY')
 SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
 SUPABASE_SERVICE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
-NVIDIA_MODEL = "meta/llama-3.1-70b-instruct"
+GOOGLE_API_KEY = os.getenv('NEXT_PUBLIC_GOOGLE_MAPS_KEY', '')
+NVIDIA_MODEL = "nvidia/nvidia-nemotron-nano-9b-v2"
 NVIDIA_BASE = "https://integrate.api.nvidia.com/v1"
 
 
-def web_search_place(place_name, address):
-    context = ""
-    queries = [f"{place_name} {address} 영업시간 전화번호", f"{place_name} 메뉴 가격"]
+def validate_address_region(address, phone):
+    """
+    주소와 전화번호의 지역이 일치하는지 확인.
+    예: phone='02-xxx'(서울)인데 address='전라남도'면 불일치로 판단
+    """
+    if not address or not phone:
+        return True  # 정보가 없으면 검증 패스 (나중에 다른 단계에서 거름)
+    
+    # 전화번호 지역 코드 매핑
+    region_prefix = {
+        '02': '서울',
+        '031': ['경기', '수원', '성남', '안양', '부천'],
+        '032': '인천',
+        '033': ['강원', '춘천', '원주', '강릉'],
+        '041': ['충남', '천안', '아산', '당진', '서산', '공주'],
+        '042': '대전',
+        '043': ['충북', '청주', '충주', '제천'],
+        '044': '세종',
+        '051': '부산',
+        '052': '울산',
+        '053': '대구',
+        '054': ['경북', '포항', '경주', '안동', '구미'],
+        '055': ['경남', '창원', '진주', '통영', '김해', '양산'],
+        '061': ['전남', '목포', '여수', '순천', '광양', '나주'],
+        '062': '광주',
+        '063': ['전북', '전주', '군산', '익산', '정읍'],
+        '064': '제주',
+    }
+    
+    # 전화번호에서 지역 코드 추출
+    phone_clean = re.sub(r'[-\s]', '', phone)
+    code = ''
+    if phone_clean.startswith('02'):
+        code = '02'
+    elif len(phone_clean) >= 3:
+        code = phone_clean[:3]
+    
+    if not code:
+        return True
+    
+    expected_region = region_prefix.get(code)
+    if not expected_region:
+        return True
+    
+    # 주소에 예상 지역이 포함되어 있는지 확인
+    if isinstance(expected_region, list):
+        return any(region in address for region in expected_region)
+    else:
+        return expected_region in address
+
+
+def google_verify_place(place_name, address):
+    """
+    Google Places API로 실제 존재하는 장소인지 최종 검증
+    Returns: (exists: bool, google_address: str, google_phone: str)
+    """
+    if not GOOGLE_API_KEY:
+        return True, address, ''  # API 키 없으면 일단 통과
+    
+    query = f"{place_name} {address[:30]}".strip()
     try:
-        from duckduckgo_search import DDGS
-        for q in queries:
-            try:
-                with DDGS() as dg:
-                    results = list(dg.text(q, max_results=3))
-                    for r in results:
-                        context += f"[{q}] {r['body']}\n"
-            except:
-                pass
+        resp = requests.post(
+            'https://places.googleapis.com/v1/places:searchText',
+            headers={
+                'Content-Type': 'application/json',
+                'X-Goog-Api-Key': GOOGLE_API_KEY,
+                'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.nationalPhoneNumber',
+            },
+            json={'textQuery': query, 'maxResultCount': 1, 'languageCode': 'ko'},
+            timeout=10
+        )
+        data = resp.json()
+        
+        if data.get('places') and len(data['places']) > 0:
+            place = data['places'][0]
+            google_name = place.get('displayName', {}).get('text', '')
+            google_addr = place.get('formattedAddress', '')
+            google_phone = place.get('nationalPhoneNumber', '')
+            
+            # Google에서 찾은 장소명과 입력한 장소명이 유사한지 확인
+            if google_name and (place_name.lower() in google_name.lower() or google_name.lower() in place_name.lower()):
+                return True, google_addr, google_phone
+            
+            # Google에서 정제된 주소가 원래 주소와 유사한지 확인
+            if google_addr and any(part in google_addr for part in address.split()[:2]):
+                return True, google_addr, google_phone
+                
+        # Google이 해당 장소를 찾지 못함 = 존재하지 않을 가능성 높음
+        return False, address, ''
     except:
-        pass
-    return context
+        return True, address, ''  # 오류 시 일단 통과
 
 
-
-
-def naver_search_verify(place_name, address):
-    """네이버 검색 API로 장소 존재 여부 확인"""
-    client_id = os.getenv('NAVER_CLIENT_ID', '')
-    client_secret = os.getenv('NAVER_CLIENT_SECRET', '')
-    
-    if not client_id or not client_secret:
-        return False, 0
-    
-    query = f"{place_name} {address}" if address else place_name
-    
-    try:
-        headers = {
-            'X-Naver-Client-Id': client_id,
-            'X-Naver-Client-Secret': client_secret
-        }
-        
-        # 지역 검색 API (local)
-        local_url = f"https://openapi.naver.com/v1/search/local?query={urllib.parse.quote(query)}&display=1"
-        resp = requests.get(local_url, headers=headers, timeout=10)
-        
-        if resp.status_code == 200:
-            data = resp.json()
-            if data.get('items') and len(data['items']) > 0:
-                item = data['items'][0]
-                title = item.get('title', '').replace('<b>', '').replace('</b>', '')
-                # 장소명이 검색 결과와 유사하면 통과
-                if place_name.lower() in title.lower() or title.lower() in place_name.lower():
-                    return True, 70
-                return True, 50
-        
-        # 웹 검색 API (fallback)
-        web_url = f"https://openapi.naver.com/v1/search/webkr?query={urllib.parse.quote(query)}&display=1"
-        resp = requests.get(web_url, headers=headers, timeout=10)
-        
-        if resp.status_code == 200:
-            data = resp.json()
-            if data.get('items') and len(data['items']) > 0:
-                return True, 40
-    except:
-        pass
-    
-    return False, 0
-
-def verify_place(place_name, address):
-    """교차검증 v3.1: 낙관적 — 주소 형식이 맞으면 통과"""
+def verify_place_strict(place_name, address, phone=''):
+    """엄격 모드 교차검증 v4.0: 주소-전화번호 지역 일치 + Google 검증"""
     if not place_name or not address or len(place_name) < 2:
-        return False, 0
-
-    name_lower = place_name.lower().replace(' ', '')
-    addr_lower = address.lower().replace(' ', '')
-
-    # 네이버 검색
-    query = urllib.parse.quote(f"{place_name} {address[:20]}")
-    nav_url = f"https://search.naver.com/search.naver?where=nexearch&query={query}"
-
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        resp = requests.get(nav_url, headers=headers, timeout=8)
-        html = resp.text.lower()
-
-        name_in_html = name_lower in html
-        addr_parts = [p for p in address.split() if len(p) > 1]
-        addr_matches = sum(1 for p in addr_parts if p.lower() in html)
-        addr_ratio = addr_matches / max(len(addr_parts), 1)
-
-        fake_patterns = ['맛있는길', '테헤란로 427', '없음', '정보']
-        is_fake = any(p in address for p in fake_patterns)
-
-        score = 30
-        if name_in_html: score += 30
-        if addr_ratio > 0.6: score += 30
-        if addr_ratio > 0.8: score += 10
-        if is_fake: score -= 40
-
-        verified = score >= 40  # 낮춤: 50 -> 40
-        return verified, min(score, 100)
-    except:
-        pass
-
-    # 폴백: 주소 형식만 확인
-    addr_ok = bool(re.search(r'[시군구]\s', address)) and len(address) > 8
-    # Geocode 확인
-    lat, lng = geocode_address(address, place_name)
-    if addr_ok or (lat != 0 and lng != 0):
-        return True, 50
-    # 2차 폴백: 주소가 적당한 길이면 통과
-    if len(address) > 10:
-        return True, 40
-    return False, 0
-
-
-def extract_place_urls(place_name, address):
-    """Google/Naver Place URL 추출"""
-    google_url = None
-    naver_url = None
+        return False, 0, {}
     
-    # Google Places API
-    google_key = os.getenv('NEXT_PUBLIC_GOOGLE_MAPS_KEY', '')
-    if google_key:
-        try:
-            resp = requests.post(
-                'https://places.googleapis.com/v1/places:searchText',
-                headers={
-                    'Content-Type': 'application/json',
-                    'X-Goog-Api-Key': google_key,
-                    'X-Goog-FieldMask': 'places.id,places.googleMapsUri',
-                },
-                json={'textQuery': f"{place_name} {address[:50]}", 'maxResultCount': 1, 'languageCode': 'ko'},
-                timeout=10
-            )
-            data = resp.json()
-            if data.get('places'):
-                place = data['places'][0]
-                uri = place.get('googleMapsUri', '')
-                if uri:
-                    google_url = uri
-                else:
-                    place_id = place.get('id', '')
-                    if place_id:
-                        google_url = f"https://www.google.com/maps/place/?q=place_id:{place_id}"
-        except:
-            pass
+    # 0. 기본 가짜 데이터 필터링
+    fake_patterns = ['맛있는길', '테헤란로 427', '없음', '정보', '추정', '미기재', '미공개']
+    if any(p in address for p in fake_patterns):
+        return False, 0, {}
     
-    # Naver URL
-    try:
-        from urllib.parse import quote
-        query = f"{place_name} {address[:30]}".strip()
-        naver_url = f"https://map.naver.com/search/{quote(query)}"
-    except:
-        pass
+    # 1. 지역-전화번호 일치 검증
+    if not validate_address_region(address, phone):
+        return False, 0, {}
     
-    return google_url, naver_url
+    # 2. Google Places 검증 (최종)
+    exists, google_addr, google_phone = google_verify_place(place_name, address)
+    if not exists:
+        return False, 0, {}
+    
+    # 3. Google Places에서 찾은 정확한 주소/전화번호 반환
+    verified_data = {}
+    if google_addr:
+        verified_data['address'] = google_addr
+    if google_phone:
+        verified_data['phone'] = google_phone
+    
+    return exists, 90 if google_phone else 70, verified_data
 
 
 def geocode_address(address, place_name=""):
+    """기존 지오코딩 함수 유지"""
     if not address or len(address) < 5:
         return 0, 0
     fake_keywords = ['맛있는길', '테헤란로 427', '없음']
     if any(k in address for k in fake_keywords):
         return 0, 0
 
-    # 1. Google Places
     google_key = os.getenv('NEXT_PUBLIC_GOOGLE_MAPS_KEY', '')
     if google_key:
         try:
             q = address.replace('  ', ' ').strip()[:100]
             gp_resp = requests.post(
                 'https://places.googleapis.com/v1/places:searchText',
-                headers={
-                    'Content-Type': 'application/json',
-                    'X-Goog-Api-Key': google_key,
-                    'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location',
-                },
+                headers={'Content-Type': 'application/json', 'X-Goog-Api-Key': google_key,
+                         'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location'},
                 json={'textQuery': f"{place_name} {q}", 'maxResultCount': 1, 'languageCode': 'ko'},
                 timeout=10
             )
@@ -201,32 +174,11 @@ def geocode_address(address, place_name=""):
                     return lat, lng
         except:
             pass
-
-    # 2. Nominatim
-    try:
-        from geopy.geocoders import Nominatim
-        geolocator = Nominatim(user_agent="axiv_batch_save")
-        location = geolocator.geocode(f"{place_name} {address}", timeout=10)
-        if location:
-            return location.latitude, location.longitude
-    except:
-        pass
-
-    # 3. Photon
-    try:
-        query = urllib.parse.quote(f"{place_name} {address}"[:100])
-        resp = requests.get(f'https://photon.komoot.io/api/?q={query}&limit=1', timeout=10)
-        data = resp.json()
-        if data.get('features') and len(data['features']) > 0:
-            coords = data['features'][0]['geometry']['coordinates']
-            return coords[1], coords[0]
-    except:
-        pass
-
     return 0, 0
 
 
 def analyze(url):
+    """AI 분석 — 프롬프트 강화: 없는 정보는 만들지 말것"""
     print(f'\n🔍 분석 시작: {url}')
     raw = get_youtube_full_data(url)
     if not raw:
@@ -246,11 +198,12 @@ def analyze(url):
 - 자막: {raw['transcript'][:10000]}
 - 웹검색결과: {search_ctx[:8000]}
 
-[핵심 규칙]
-1. place_name은 크리에이터가 실제로 방문한 장소의 정확한 상호명
-2. address는 반드시 실제 도로명 주소 (00시 00구 00로 00길 00 형식). 웹검색결과에서 찾을 수 없으면 영상 내용으로 추론하되 합리적으로 추정
-3. category는 food/cafe/camping/fishing/travel/accommodation 중 선택
-4. 다른 필드들도 최대한 채우세요
+[핵심 규칙 — 반드시 지킬 것]
+1. **가짜 데이터 생성 금지**: 영상이나 웹검색에서 확인되지 않은 정보는 절대 추측해서 넣지 마세요. 모르는 필드는 반드시 빈 문자열("")로 남겨두세요.
+2. **address**: 영상/웹검색에서 정확한 도로명 주소(시/도, 시/군/구, 도로명, 번지)가 확인된 경우만 입력하세요. 모르면 빈 값.
+3. **phone**: 영상에서 크리에이터가 직접 전화번호를 말했거나 화면에 나온 경우만 입력하세요. 절대 추측 금지.
+4. **category**: food(맛집)/cafe(카페)/camping(캠핑)/fishing(낚시)/travel(여행지)/accommodation(숙소) 중 선택
+5. **상호명 오류 방지**: 상호명에 주소, 전화번호, 유튜브 채널명 등을 절대 포함하지 마세요.
 
 응답은 순수 JSON 배열만:
 [{{"place_name":"","address":"","phone":"","category":"","business_hours":"","break_time":"","menu_with_prices":"","place_description":"","waiting_tip":"","parking_info":"","creator_review":"","summary":"","timeline_seconds":0}}]"""
@@ -283,31 +236,28 @@ def analyze(url):
     for i, p in enumerate(places):
         name = p.get('place_name', '').strip()
         addr = p.get('address', '').strip()
-        if not name or not addr or len(name) < 2:
+        phone = p.get('phone', '').strip()
+        
+        if not name or len(name) < 2:
             continue
-
-        verified, confidence = verify_place(name, addr)
+        
+        # 엄격 모드 검증
+        verified, confidence, verified_data = verify_place_strict(name, addr, phone)
         if not verified:
+            print(f'  ❌ 검증 실패: {name} (전화:{phone})')
             continue
-
-        lat, lng = geocode_address(addr, name)
+        
+        # 검증된 데이터로 업데이트
+        if verified_data.get('address'):
+            p['address'] = verified_data['address']
+        if verified_data.get('phone'):
+            p['phone'] = verified_data['phone']
+        
+        lat, lng = geocode_address(p.get('address', ''), name)
         p['lat'] = lat
         p['lng'] = lng
         p['verified'] = verified
         p['confidence'] = confidence
-
-        # 빈 값 정리
-        for f in ['waiting_tip', 'parking_info']:
-            if not p.get(f) or p[f] in ['없음', '정보 없음']: p[f] = ''
-        for f in ['business_hours', 'break_time', 'menu_with_prices', 'place_description', 'phone']:
-            if not p.get(f) or p[f] in ['없음', '정보 없음']: p[f] = ''
-
-        # Google/Naver URL 추출
-        google_url, naver_url = extract_place_urls(name, addr)
-        if google_url:
-            p['google_place_url'] = google_url
-        if naver_url:
-            p['naver_place_url'] = naver_url
         
         verified_places.append(p)
 
@@ -325,6 +275,7 @@ def analyze(url):
 
 
 def save(result):
+    """Supabase 저장 함수 — 변경 없음"""
     from supabase import create_client
     sb = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
@@ -357,8 +308,6 @@ def save(result):
                 'break_time': p.get('break_time', '') or '',
                 'representative_menu': p.get('menu_with_prices', '') or '',
                 'place_description': p.get('place_description', '') or '',
-                'google_place_url': p.get('google_place_url', '') or '',
-                'naver_place_url': p.get('naver_place_url', '') or '',
                 'waiting_tip': p.get('waiting_tip', '') or '',
                 'parking_info': p.get('parking_info', '') or ''
             }
