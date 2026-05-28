@@ -1,0 +1,160 @@
+/usr/bin/bash: warning: setlocale: LC_ALL: cannot change locale (ko_KR.UTF-8): No such file or directory
+#!/usr/bin/env python3
+"""axiv 신규 카테고리 유튜버 수집 v2 — 액티비티/전시/팝업/드라이브 등
+   batch_save의 엄격 검증을 통과하지 못해도 contents에 저장하고 skip 처리"""
+import os, sys, json, subprocess, time, uuid
+sys.path.insert(0, '/home/ubuntu/projects/axiv/python_server')
+from dotenv import load_dotenv
+load_dotenv('/home/ubuntu/projects/axiv/.env.local')
+from supabase import create_client
+
+URL = os.environ.get('NEXT_PUBLIC_SUPABASE_URL')
+KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+sb = create_client(URL, KEY)
+
+BATCH_CMD = '/home/ubuntu/projects/axiv/scripts/batch_save.py'
+
+# 액티비티/전시/팝업 등 — batch_save의 엄격 검증을 통과하기 어려운 카테고리
+NEW_CATEGORY_SEARCHES = [
+    # 액티비티/레저
+    '레저 액티비티 추천', '서바이벌 체험', '클라이밍장 추천',
+    '레일바이크 체험', '짚라인 어드벤처', 'ATV 체험장',
+    '서핑 강습', '스쿠버다이빙 체험', '승마 체험',
+    '양궁 체험', '사격장 체험', '플라이보드',
+    # 전시/문화
+    '전시회 추천', '미술관 전시', '뮤지엄 전시',
+    '사진전 추천', '몰입형 전시', '아트전시',
+    '과학관 체험', '박물관 추천', '갤러리 추천',
+    # 팝업스토어
+    '팝업스토어 추천', '팝업 전시', '한정 팝업',
+    '브랜드 팝업', '컬래버레이션 팝업',
+    '서울 팝업스토어',
+    # 드라이브/당일치기
+    '드라이브 코스', '당일치기 여행', '서울 근교 드라이브',
+    '일출 명소', '일몰 명소', '노을 드라이브',
+    # 체험형
+    '원데이클래스 추천', '도자기 체험', '플라워 클래스',
+    '쿠킹클래스 추천', '공방 체험', '목공예 체험',
+    '캔들 만들기', '비누 만들기', '가죽공예 체험',
+]
+
+def get_existing():
+    ids = set()
+    offset = 0
+    while True:
+        res = sb.table('contents').select('video_id').range(offset, offset+999).execute()
+        d = res.data or []
+        if not d: break
+        ids.update(x['video_id'] for x in d)
+        offset += len(d)
+    return ids
+
+def yt_search(query, max_results=3):
+    try:
+        r = subprocess.run(['yt-dlp', f'ytsearch{max_results}:{query}', '--flat-playlist', '--dump-json'],
+                          capture_output=True, text=True, timeout=30)
+        urls = []
+        for line in r.stdout.strip().split('\n'):
+            if not line: continue
+            try:
+                d = json.loads(line)
+                urls.append(f"https://youtube.com/watch?v={d['id']}")
+            except: pass
+        return urls
+    except:
+        return []
+
+def save_video_to_contents(video_id, url, title='', creator='', thumbnail=''):
+    """batch_save 검증을 통과 못해도 contents 테이블에 저장"""
+    data = {
+        'id': str(uuid.uuid4()),
+        'video_id': video_id,
+        'title': title or video_id,
+        'url': url,
+        'creator_name': creator or '',
+        'creator_channel_url': f'https://www.youtube.com/channel/{video_id}',
+        'thumbnail_url': thumbnail or ''
+    }
+    try:
+        sb.table('contents').insert(data).execute()
+        return True
+    except:
+        return False
+
+def get_video_info(url):
+    """yt-dlp로 기본 정보만 빠르게 조회"""
+    try:
+        r = subprocess.run(['yt-dlp', url, '--dump-json', '--no-playlist'],
+                          capture_output=True, text=True, timeout=15)
+        if r.returncode == 0 and r.stdout.strip():
+            d = json.loads(r.stdout.strip())
+            return d.get('id', ''), d.get('title', ''), d.get('uploader', ''), d.get('thumbnail', '')
+    except:
+        pass
+    vid = url.split('v=')[-1].split('&')[0]
+    return vid, '', '', ''
+
+print('=== axiv 신규 카테고리 수집 v2 ===')
+print(f'시작: {time.strftime("%Y-%m-%d %H:%M:%S")}\n')
+
+existing = get_existing()
+print(f'기존 영상: {len(existing)}개')
+
+new_total = 0
+skip_total = 0
+fail_total = 0
+
+for query in NEW_CATEGORY_SEARCHES:
+    print(f'🔍 검색: {query}')
+    urls = yt_search(query, 3)
+
+    for url in urls:
+        vid = url.split('v=')[-1].split('&')[0]
+        if vid in existing:
+            skip_total += 1
+            continue
+
+        print(f'  📥 {vid[:15]}... ', end='', flush=True)
+        try:
+            r = subprocess.run(['python3', BATCH_CMD, url],
+                              capture_output=True, text=True, timeout=600)
+
+            if '저장' in r.stdout:
+                # batch_save가 장소를 찾아 저장함
+                print('✅ 저장')
+                existing.add(vid)
+                new_total += 1
+            elif '검증 실패' in r.stdout or '교차검증' in r.stdout:
+                # batch_save 실행됐지만 검증 실패 — 그래도 contents에 저장
+                info = get_video_info(url)
+                if save_video_to_contents(info[0] or vid, url, info[1], info[2], info[3]):
+                    print('📝 컨텐츠 저장(장소 미검증)')
+                else:
+                    print('⚠️ 저장실패')
+                    fail_total += 1
+                existing.add(vid)
+            else:
+                # 다른 이유로 처리 안됨
+                info = get_video_info(url)
+                if save_video_to_contents(info[0] or vid, url, info[1], info[2], info[3]):
+                    print('📝 컨텐츠만 저장')
+                else:
+                    print('❌ 처리안됨')
+                    fail_total += 1
+                existing.add(vid)
+        except subprocess.TimeoutExpired:
+            print('⏰ 타임아웃')
+            fail_total += 1
+        except Exception as e:
+            print(f'⚠️ {str(e)[:30]}')
+            fail_total += 1
+        time.sleep(1)
+    print()
+
+print(f'\n{"="*40}')
+print(f'📊 신규 카테고리 수집 결과')
+print(f'batch_save 저장: {new_total}개 (장소까지 저장)')
+print(f'컨텐츠만 저장/스킵: {skip_total}개')
+print(f'실패: {fail_total}개')
+print(f'완료: {time.strftime("%Y-%m-%d %H:%M:%S")}')
+print(f'{"="*40}')
