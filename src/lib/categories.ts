@@ -1,4 +1,3 @@
-/usr/bin/bash: warning: setlocale: LC_ALL: cannot change locale (ko_KR.UTF-8): No such file or directory
 export const CATEGORIES = [
   { id: 'food',          label: '맛집',  icon: '🍴', color: '#EF4444' },
   { id: 'cafe',          label: '카페',  icon: '☕', color: '#F59E0B' },
